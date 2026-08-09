@@ -5,7 +5,6 @@ import { Printer, TrendingUp, Coins, BarChart3, Vault, FileSpreadsheet, Building
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
-
 import { SkeletonTable, SkeletonStatCard, SkeletonChart } from "@/components/ui/Skeleton";
 
 export default function RapportsPage() {
@@ -35,7 +34,7 @@ export default function RapportsPage() {
   }
 
   const filteredSales = sales.filter(s => {
-    const saleDate = s.date.slice(0, 10);
+    const saleDate = s.date ? s.date.slice(0, 10) : "";
     const matchStart = !startDate || saleDate >= startDate;
     const matchEnd = !endDate || saleDate <= endDate;
     return matchStart && matchEnd;
@@ -45,7 +44,7 @@ export default function RapportsPage() {
   let costGoods = 0;
 
   // Breakdown per product
-  const productPerformance: { [prodId: string]: { title: string; code: string; bagsSold: number; revenue: number; cost: number; margin: number } } = {};
+  const productPerformance: { [key: string]: { title: string; code: string; bagsSold: number; revenue: number; cost: number; margin: number } } = {};
 
   products.forEach(p => {
     productPerformance[p.id] = { title: p.title, code: p.code, bagsSold: 0, revenue: 0, cost: 0, margin: 0 };
@@ -59,22 +58,39 @@ export default function RapportsPage() {
 
   filteredSales.forEach(s => {
     totalCA += s.totalAmount;
-    if (depotPerformance[s.depotId]) {
-      depotPerformance[s.depotId].revenue += s.totalAmount;
-      depotPerformance[s.depotId].salesCount += 1;
+
+    const foundDepot = depots.find(d => d.id === s.depotId || d.name === s.depotId);
+    const depotKey = foundDepot ? foundDepot.id : s.depotId;
+
+    if (!depotPerformance[depotKey]) {
+      depotPerformance[depotKey] = { name: foundDepot ? foundDepot.name : s.depotId, revenue: 0, salesCount: 0 };
     }
+    depotPerformance[depotKey].revenue += s.totalAmount;
+    depotPerformance[depotKey].salesCount += 1;
 
     s.items.forEach(it => {
-      const prod = products.find(p => p.id === it.productId);
-      const buyPrice = prod ? prod.buyPrice : 0;
-      costGoods += it.qty * buyPrice;
+      const prod = products.find(p => p.id === it.productId || p.title.toLowerCase() === it.title.toLowerCase());
+      const buyPrice = (prod && prod.buyPrice > 0) ? prod.buyPrice : Math.round(it.price * 0.85);
+      const itemCost = it.qty * buyPrice;
+      const itemRev = it.price * it.qty;
+      costGoods += itemCost;
 
-      if (productPerformance[it.productId]) {
-        productPerformance[it.productId].bagsSold += it.qty;
-        productPerformance[it.productId].revenue += it.price * it.qty;
-        productPerformance[it.productId].cost += buyPrice * it.qty;
-        productPerformance[it.productId].margin += (it.price - buyPrice) * it.qty;
+      const prodKey = prod ? prod.id : (it.productId || it.title);
+      if (!productPerformance[prodKey]) {
+        productPerformance[prodKey] = {
+          title: prod ? prod.title : it.title,
+          code: prod ? prod.code : 'RZ-PF',
+          bagsSold: 0,
+          revenue: 0,
+          cost: 0,
+          margin: 0
+        };
       }
+
+      productPerformance[prodKey].bagsSold += it.qty;
+      productPerformance[prodKey].revenue += itemRev;
+      productPerformance[prodKey].cost += itemCost;
+      productPerformance[prodKey].margin += (itemRev - itemCost);
     });
   });
 
@@ -88,7 +104,53 @@ export default function RapportsPage() {
 
   const totalExp = expenses.reduce((acc, curr) => acc + curr.amount, 0);
   const netProfit = grossMargin - totalExp;
-  const marginPercent = totalCA > 0 ? ((grossMargin / totalCA) * 100).toFixed(1) : 0;
+  const marginPercent = totalCA > 0 ? ((grossMargin / totalCA) * 100).toFixed(1) : "0";
+
+  const handleExportCSV = () => {
+    let csv = "data:text/csv;charset=utf-8,";
+    csv += "RAPPORT FINANCIER & PERFORMANCE COMMERCIALES - RIZSTOCK ERP\n";
+    csv += `Exercice,2026,Date Export,${new Date().toLocaleDateString('fr-FR')}\n\n`;
+
+    csv += "COMPTE DE RESULTAT SYNTHETIQUE (SYSCOHADA)\n";
+    csv += "Poste Comptable,Montant (FCFA)\n";
+    csv += `"Ventes de Marchandises (Chiffre d'Affaires Brut)","+${totalCA}"\n`;
+    csv += `"Coût d'Achat des Marchandises Vendues (CAMV)","-${costGoods}"\n`;
+    csv += `"MARGE BRUTE COMMERCIALES","=${grossMargin}"\n`;
+    csv += `"Charges de Manutention & Manœuvres Port","-${manutentionCost}"\n`;
+    csv += `"Camionnage Transport Inter-Dépôts & Carburant","-${transportCost}"\n`;
+    csv += `"Loyers Entrepôts & Charges Fixes Dépôts","-${loyerCost}"\n`;
+    if (otherCost > 0) csv += `"Autres Charges Opérationnelles & Salaires","-${otherCost}"\n`;
+    csv += `"RESULTAT NET DE L'EXERCICE","=${netProfit}"\n\n`;
+
+    csv += "VENTILATION ET RENTABILITE PAR VARIETE DE RIZ\n";
+    csv += "Code,Varieté,Volume (Sacs),Chiffre d'Affaires (FCFA),Coût d'Achat (FCFA),Marge Dégagée (FCFA),Taux de Marge (%)\n";
+    Object.keys(productPerformance).forEach(pId => {
+      const item = productPerformance[pId];
+      if (item.bagsSold > 0 || item.revenue > 0) {
+        const marginPct = item.revenue > 0 ? ((item.margin / item.revenue) * 100).toFixed(1) : "0";
+        csv += `"${item.code}","${item.title.replace(/"/g, '""')}","${item.bagsSold}","${item.revenue}","${item.cost}","${item.margin}","${marginPct}%"\n`;
+      }
+    });
+    csv += "\n";
+
+    csv += "PERFORMANCE DU CHIFFRE D'AFFAIRES PAR ENTREPOT DEPOT\n";
+    csv += "Dépôt,Nombre de Factures,Chiffre d'Affaires (FCFA),Part du CA (%)\n";
+    Object.keys(depotPerformance).forEach(depId => {
+      const dPerf = depotPerformance[depId];
+      const percent = totalCA > 0 ? ((dPerf.revenue / totalCA) * 100).toFixed(1) : "0";
+      csv += `"${dPerf.name.replace(/"/g, '""')}","${dPerf.salesCount}","${dPerf.revenue}","${percent}%"\n`;
+    });
+
+    const encodedUri = encodeURI(csv);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Rapport_Financier_SYSCOHADA_RizStock_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    showToast("Rapport financier et compte de résultat exporté en CSV avec succès !", "success");
+  };
 
   return (
     <div className="space-y-6">
@@ -111,7 +173,7 @@ export default function RapportsPage() {
           />
 
           <button 
-            onClick={() => showToast("Exportation du rapport comptable CSV...", "success")}
+            onClick={handleExportCSV}
             className="bg-[#1e293b] hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2 transition-colors cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
@@ -183,7 +245,7 @@ export default function RapportsPage() {
         <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <span className="font-extrabold text-base text-white flex items-center gap-2">
-              📊 Compte de Résultat Synthetique
+              📊 Compte de Résultat Synthétique
             </span>
             <span className="text-xs bg-emerald-500/15 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full">
               SYSCOHADA
@@ -225,7 +287,7 @@ export default function RapportsPage() {
                 </tr>
                 {otherCost > 0 && (
                   <tr>
-                    <td className="p-3 text-slate-300 pl-6">- Autre Charges Opérationnelles & Salaires RH</td>
+                    <td className="p-3 text-slate-300 pl-6">- Autres Charges Opérationnelles & Salaires RH</td>
                     <td className="p-3 text-right text-red-400">-{formatFCFA(otherCost)}</td>
                   </tr>
                 )}
@@ -260,27 +322,33 @@ export default function RapportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {Object.keys(productPerformance).map(pId => {
-                  const item = productPerformance[pId];
-                  const marginPct = item.revenue > 0 ? ((item.margin / item.revenue) * 100).toFixed(1) : 0;
-                  return (
-                    <tr key={pId} className="hover:bg-white/5 transition-colors">
-                      <td className="p-3 font-bold text-white flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <div>
-                          <div>{item.title}</div>
-                          <span className="text-[10px] text-blue-400 font-normal">{item.code}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-right text-slate-300 font-semibold">{formatNumber(item.bagsSold)} Sacs</td>
-                      <td className="p-3 text-right text-slate-200 font-bold">{formatFCFA(item.revenue)}</td>
-                      <td className="p-3 text-right font-black text-emerald-400">
-                        +{formatFCFA(item.margin)}
-                        <div className="text-[10px] text-blue-400 font-bold">{marginPct}% Marge</div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {Object.keys(productPerformance).length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-slate-400 italic">Aucune donnée de vente enregistrée</td>
+                  </tr>
+                ) : (
+                  Object.keys(productPerformance).map(pId => {
+                    const item = productPerformance[pId];
+                    const marginPct = item.revenue > 0 ? ((item.margin / item.revenue) * 100).toFixed(1) : "0";
+                    return (
+                      <tr key={pId} className="hover:bg-white/5 transition-colors">
+                        <td className="p-3 font-bold text-white flex items-center gap-1.5">
+                          <Package className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <div>
+                            <div>{item.title}</div>
+                            <span className="text-[10px] text-blue-400 font-normal">{item.code}</span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-right text-slate-300 font-semibold">{formatNumber(item.bagsSold)} Sacs</td>
+                        <td className="p-3 text-right text-slate-200 font-bold">{formatFCFA(item.revenue)}</td>
+                        <td className="p-3 text-right font-black text-emerald-400">
+                          +{formatFCFA(item.margin)}
+                          <div className="text-[10px] text-blue-400 font-bold">{marginPct}% Marge</div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -291,13 +359,13 @@ export default function RapportsPage() {
       {/* Performance by Depot Section */}
       <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 space-y-4">
         <span className="font-extrabold text-base text-white flex items-center gap-2">
-          🏢 Performance & Ventillation du CA par Entrepôt Dépôt
+          🏢 Performance & Ventilation du CA par Entrepôt Dépôt
         </span>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Object.keys(depotPerformance).map(depId => {
             const dPerf = depotPerformance[depId];
-            const percent = totalCA > 0 ? ((dPerf.revenue / totalCA) * 100).toFixed(1) : 0;
+            const percent = totalCA > 0 ? ((dPerf.revenue / totalCA) * 100).toFixed(1) : "0";
 
             return (
               <div key={depId} className="bg-[#0f172a] border border-white/10 rounded-xl p-4 space-y-2">

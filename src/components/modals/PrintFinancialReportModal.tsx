@@ -18,8 +18,8 @@ export const PrintFinancialReportModal: React.FC = () => {
   sales.forEach(s => {
     totalCA += s.totalAmount;
     s.items.forEach(it => {
-      const prod = products.find(p => p.id === it.productId);
-      const buyPrice = prod ? prod.buyPrice : 0;
+      const prod = products.find(p => p.id === it.productId || p.title.toLowerCase() === it.title.toLowerCase());
+      const buyPrice = (prod && prod.buyPrice > 0) ? prod.buyPrice : Math.round(it.price * 0.85);
       costGoods += it.qty * buyPrice;
     });
   });
