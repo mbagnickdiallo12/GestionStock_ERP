@@ -208,9 +208,10 @@ body {
     visibility: hidden !important;
   }
 
-  /* Unconstrain all parent elements so printable-document fills full A4 width */
+  /* Unconstrain all parent elements so printable-document & printable-area fill full A4 width */
   html, body, main, div, [role="dialog"],
-  .fixed, .backdrop-blur-sm, .printable-document, .printable-document * {
+  .fixed, .backdrop-blur-sm, .printable-document, .printable-document *,
+  .printable-area, .printable-area * {
     visibility: visible !important;
   }
 
@@ -237,7 +238,7 @@ body {
   }
 
   /* Printable Document occupies full A4 page width */
-  .printable-document {
+  .printable-document, .printable-area {
     display: block !important;
     position: absolute !important;
     top: 0 !important;
@@ -257,17 +258,17 @@ body {
     break-inside: avoid !important;
   }
 
-  /* Preserve flex and grid layouts inside .printable-document */
-  .printable-document .flex {
+  /* Preserve flex and grid layouts inside printable elements */
+  .printable-document .flex, .printable-area .flex {
     display: flex !important;
   }
-  .printable-document .grid {
+  .printable-document .grid, .printable-area .grid {
     display: grid !important;
   }
-  .printable-document .hidden {
+  .printable-document .hidden, .printable-area .hidden {
     display: none !important;
   }
-  .printable-document * {
+  .printable-document *, .printable-area * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

@@ -77,7 +77,7 @@ export const CashAuditModal: React.FC = () => {
         </div>
       )}
     >
-      <div className="space-y-5 text-sm printable-area">
+      <div className="printable-document space-y-5 text-sm">
         {/* Session Status Banner */}
         <div className="bg-[#0f172a] border border-white/10 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
