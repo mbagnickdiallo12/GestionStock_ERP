@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber } from "@/lib/utils";
-import { BookOpen, Printer, ArrowDownRight, ArrowUpRight, Search, FileText, Wheat } from "lucide-react";
+import { Printer, Search, Wheat } from "lucide-react";
 
 export const CashJournalModal: React.FC = () => {
   const { activeModal, closeModal, sales, expenses, activeDepotId, depots, settings, currentUser } = useApp();
@@ -67,80 +67,79 @@ export const CashJournalModal: React.FC = () => {
   return (
     <Modal
       id="modal-cash-journal"
-      title="Journal de Caisse & Registre des Encaissements"
+      title="Journal de Caisse & Enregistrements"
       footer={(
         <div className="flex items-center justify-between w-full no-print">
           <button
             onClick={handlePrint}
-            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md"
+            className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors"
           >
-            <Printer className="w-4 h-4" /> Imprimer Journal de Caisse (PDF / Papier)
+            <Printer className="w-4 h-4" /> Imprimer / PDF
           </button>
           <button
             onClick={closeModal}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
           >
             Fermer
           </button>
         </div>
       )}
     >
-      <div className="printable-document bg-white text-slate-900 p-8 rounded-2xl font-sans space-y-6 border border-slate-200 shadow-sm">
-        {/* Printable Official Header */}
-        <div className="flex justify-between items-start pb-5 border-b border-slate-200">
-          <div className="flex items-center gap-4">
+      <div className="printable-document bg-white text-slate-900 p-6 rounded-xl font-sans space-y-5 border border-slate-200 shadow-sm">
+        
+        {/* Modern Minimalist Header */}
+        <div className="flex justify-between items-start pb-4 border-b border-slate-200">
+          <div className="flex items-center gap-3">
             {settings?.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="h-14 w-auto object-contain" />
+              <img src={settings.logoUrl} alt="Logo" className="h-12 w-auto object-contain" />
             ) : (
-              <div className="w-12 h-12 rounded-xl bg-emerald-600 text-slate-950 flex items-center justify-center font-black text-xl shadow-md shrink-0">
-                <Wheat className="w-7 h-7 text-white" />
+              <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+                <Wheat className="w-6 h-6" />
               </div>
             )}
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">{settings?.companyName || "RizStock ERP"}</h1>
-              <p className="text-xs text-slate-500 font-medium">{settings?.address || "Dakar, Sénégal"}</p>
-              <p className="text-xs text-slate-500 font-medium">Tél: {settings?.phone || "+221 33 800 00 00"} | RCCM: {settings?.rccm || "SN-DKR-2026-B-0000"}</p>
+              <h1 className="text-lg font-bold text-slate-900 leading-tight">{settings?.companyName || "RizStock ERP"}</h1>
+              <p className="text-[11px] text-slate-500">{settings?.address || "Dakar, Sénégal"} • Tél: {settings?.phone || "+221 33 800 00 00"}</p>
             </div>
           </div>
 
           <div className="text-right">
-            <h2 className="text-xl font-black text-slate-900 tracking-wider uppercase">JOURNAL DE CAISSE</h2>
-            <p className="text-xs text-slate-600 mt-1 font-semibold">Dépôt : <span className="text-emerald-700 font-bold">{depotNameDisplay}</span></p>
-            <p className="text-xs text-slate-600 font-semibold">Édité le : <span className="text-slate-900">{printDate}</span></p>
-            <p className="text-xs text-slate-600 font-semibold">Opérateur : <span className="text-slate-900 font-bold">{currentUser?.name || "Caissier POS"}</span></p>
+            <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">Journal de Caisse</h2>
+            <div className="text-[11px] text-slate-600 mt-0.5 space-x-3 font-medium">
+              <span>Dépôt: <strong className="text-slate-900">{depotNameDisplay}</strong></span>
+              <span>•</span>
+              <span>Date: <span className="text-slate-900">{printDate}</span></span>
+            </div>
           </div>
         </div>
 
-        {/* Summary Financial KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Total Entrées Cash</span>
-            <span className="text-base font-extrabold text-emerald-700 font-mono">+{formatFCFA(totalCashIn)}</span>
+        {/* Minimalist Key Metric Line */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-500 block">Entrées Cash</span>
+            <span className="text-sm font-extrabold text-emerald-700 font-mono whitespace-nowrap">+{formatFCFA(totalCashIn)}</span>
           </div>
-
-          <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-xl">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Entrées Wave / Mobile</span>
-            <span className="text-base font-extrabold text-blue-700 font-mono">+{formatFCFA(totalWaveIn)}</span>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-500 block">Entrées Wave</span>
+            <span className="text-sm font-extrabold text-blue-700 font-mono whitespace-nowrap">+{formatFCFA(totalWaveIn)}</span>
           </div>
-
-          <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Total Sorties Caisse</span>
-            <span className="text-base font-extrabold text-rose-700 font-mono">-{formatFCFA(totalOut)}</span>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-500 block">Total Sorties</span>
+            <span className="text-sm font-extrabold text-rose-700 font-mono whitespace-nowrap">-{formatFCFA(totalOut)}</span>
           </div>
-
-          <div className="bg-slate-900 text-white p-3.5 rounded-xl">
-            <span className="text-[11px] font-bold text-emerald-400 uppercase block">Solde Net Espèces</span>
-            <span className="text-base font-extrabold text-white font-mono">{formatFCFA(netCashFlow)}</span>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-500 block">Solde Net Espèces</span>
+            <span className="text-sm font-extrabold text-slate-900 font-mono whitespace-nowrap">{formatFCFA(netCashFlow)}</span>
           </div>
         </div>
 
-        {/* Interactive Filter Controls (Hidden in Print PDF) */}
-        <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-3 rounded-xl border border-slate-200">
-          <div className="flex items-center gap-2 bg-white border border-slate-300 px-3 py-1.5 rounded-lg flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 text-slate-400" />
+        {/* Screen Filters (Hidden in PDF print) */}
+        <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-2.5 rounded-xl">
+          <div className="flex items-center gap-2 bg-white border border-slate-300 px-3 py-1 rounded-lg flex-1 min-w-[200px]">
+            <Search className="w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Rechercher par réf, client ou tiers..."
+              placeholder="Rechercher par référence, client..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent text-slate-900 text-xs outline-none w-full"
@@ -150,54 +149,52 @@ export const CashJournalModal: React.FC = () => {
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="bg-white border border-slate-300 text-slate-900 text-xs px-3 py-1.5 rounded-lg outline-none cursor-pointer font-bold"
+            className="bg-white border border-slate-300 text-slate-900 text-xs px-3 py-1 rounded-lg outline-none cursor-pointer font-medium"
           >
             <option value="all">Tous les Modes de Règlement</option>
-            <option value="Espece">💵 Espèces / Cash</option>
-            <option value="Wave">📲 Wave / Mobile Money</option>
-            <option value="Virement">🏦 Virement Bancaire</option>
-            <option value="Cheque">📜 Chèque Bancaire</option>
-            <option value="Credit">⏳ Crédit Client</option>
+            <option value="Espece">Espèces / Cash</option>
+            <option value="Wave">Wave / Mobile Money</option>
+            <option value="Virement">Virement Bancaire</option>
+            <option value="Cheque">Chèque Bancaire</option>
+            <option value="Credit">Crédit Client</option>
           </select>
         </div>
 
-        {/* Journal Entries Table */}
+        {/* Clean Minimal Table */}
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-300 font-bold uppercase text-slate-700 bg-slate-100">
-                <th className="p-3">Date & Heure</th>
-                <th className="p-3">Réf / Pièce</th>
-                <th className="p-3">Client / Tiers</th>
-                <th className="p-3">Type Opération</th>
-                <th className="p-3">Règlement</th>
-                <th className="p-3 text-right">Montant (FCFA)</th>
+              <tr className="border-b border-slate-200 font-bold uppercase text-slate-600 bg-slate-100">
+                <th className="py-2.5 px-3 whitespace-nowrap">Date</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Référence</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Tiers / Client</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Opération</th>
+                <th className="py-2.5 px-3 whitespace-nowrap">Règlement</th>
+                <th className="py-2.5 px-3 text-right whitespace-nowrap">Montant</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 font-mono">
+            <tbody className="divide-y divide-slate-200">
               {journalEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-slate-400 font-sans italic">
-                    Aucune écriture enregistrée dans le journal de caisse pour cette sélection.
+                  <td colSpan={6} className="py-6 text-center text-slate-400 italic">
+                    Aucune écriture dans le journal de caisse.
                   </td>
                 </tr>
               ) : (
                 journalEntries.map((entry, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3 text-slate-700 font-sans">{entry.date}</td>
-                    <td className="p-3 font-bold text-slate-900">
-                      <span className="bg-slate-200 text-slate-900 px-1.5 py-0.5 rounded font-mono text-[11px]">{entry.id}</span>
-                    </td>
-                    <td className="p-3 font-sans font-bold text-slate-900">{entry.party}</td>
-                    <td className="p-3 font-sans">
+                  <tr key={idx} className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{entry.date}</td>
+                    <td className="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap">{entry.id}</td>
+                    <td className="py-2.5 px-3 font-medium text-slate-900 whitespace-nowrap">{entry.party}</td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
                       {entry.type === 'VENTE' ? (
-                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold text-[10px]">🛒 Vente (+{entry.bags} Sacs)</span>
+                        <span className="text-emerald-700 font-semibold">Vente ({entry.bags} sacs)</span>
                       ) : (
-                        <span className="bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded font-bold text-[10px]">💸 Dépense Caisse</span>
+                        <span className="text-rose-700 font-semibold">Dépense Caisse</span>
                       )}
                     </td>
-                    <td className="p-3 font-sans font-medium text-slate-700">{entry.paymentMode}</td>
-                    <td className={`p-3 text-right font-black text-xs ${entry.amount >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{entry.paymentMode}</td>
+                    <td className={`py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap ${entry.amount >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                       {entry.amount >= 0 ? `+${formatFCFA(entry.amount)}` : formatFCFA(entry.amount)}
                     </td>
                   </tr>
@@ -207,18 +204,18 @@ export const CashJournalModal: React.FC = () => {
           </table>
         </div>
 
-        {/* Official Validation & Signature Footer for Print/PDF */}
-        <div className="grid grid-cols-2 gap-8 text-xs pt-8 border-t border-slate-200 font-sans">
-          <div className="border border-slate-200 p-4 rounded-xl space-y-8 bg-slate-50">
-            <span className="font-extrabold text-slate-700 block uppercase text-[10px] tracking-widest">Visa & Signature Caissier</span>
-            <div className="h-10 border-b border-dashed border-slate-300" />
-            <span className="text-[10px] text-slate-400 block text-right">Nom : {currentUser?.name || "Caissier"}</span>
+        {/* Minimal Signatures */}
+        <div className="grid grid-cols-2 gap-8 text-xs pt-6 border-t border-slate-200 font-sans">
+          <div>
+            <span className="font-bold text-slate-600 block uppercase text-[10px]">Visa Caissier</span>
+            <div className="h-10 border-b border-slate-300 mt-2" />
+            <span className="text-[10px] text-slate-400 block mt-1">{currentUser?.name || "Caissier"}</span>
           </div>
 
-          <div className="border border-slate-200 p-4 rounded-xl space-y-8 bg-slate-50 text-right">
-            <span className="font-extrabold text-slate-700 block uppercase text-[10px] tracking-widest">Visa Direction / Comptabilité</span>
-            <div className="h-10 border-b border-dashed border-slate-300" />
-            <span className="text-[10px] text-slate-400 block">Cachet & Signature Autorisée</span>
+          <div className="text-right">
+            <span className="font-bold text-slate-600 block uppercase text-[10px]">Visa Comptabilité</span>
+            <div className="h-10 border-b border-slate-300 mt-2" />
+            <span className="text-[10px] text-slate-400 block mt-1">Signature autorisée</span>
           </div>
         </div>
       </div>

@@ -182,7 +182,7 @@ body {
    ============================================================================== */
 @page {
   size: A4 portrait;
-  margin: 12mm 15mm 12mm 15mm;
+  margin: 10mm 12mm 10mm 12mm;
 }
 
 @media print {
@@ -193,13 +193,13 @@ body {
     color: #0f172a !important;
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  header, sidebar, nav, aside, button, .no-print,
+  header, sidebar, nav, aside, button, select, input, .no-print,
   .toast-container, [data-sonner-toaster] {
     display: none !important;
   }
@@ -208,7 +208,7 @@ body {
     visibility: hidden !important;
   }
 
-  /* Unconstrain all parent elements so printable-document & printable-area fill full A4 width */
+  /* Unconstrain all parent elements so printable elements fill full A4 page */
   html, body, main, div, [role="dialog"],
   .fixed, .backdrop-blur-sm, .printable-document, .printable-document *,
   .printable-area, .printable-area * {
@@ -237,12 +237,10 @@ body {
     -webkit-backdrop-filter: none !important;
   }
 
-  /* Printable Document occupies full A4 page width */
+  /* Printable Document occupies full A4 page width cleanly */
   .printable-document, .printable-area {
     display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: relative !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -253,9 +251,6 @@ body {
     box-sizing: border-box !important;
     box-shadow: none !important;
     border: none !important;
-    z-index: 99999999 !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
   }
 
   /* Preserve flex and grid layouts inside printable elements */

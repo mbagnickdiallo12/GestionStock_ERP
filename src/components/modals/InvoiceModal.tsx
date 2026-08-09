@@ -84,15 +84,15 @@ export const InvoiceModal: React.FC = () => {
               Merci de votre confiance et de votre fidélité !
             </div>
 
-            {/* 4. Table matching Rénov' Pro Model */}
+            {/* 4. Simple Clean Modern Table */}
             <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-200/80 text-slate-800 font-black border-b border-slate-300">
-                    <th className="p-3.5">Description</th>
-                    <th className="p-3.5 text-center">Quantité</th>
-                    <th className="p-3.5 text-right">Prix unitaire</th>
-                    <th className="p-3.5 text-right">Montant Total</th>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="p-3 whitespace-nowrap">Désignation Produit</th>
+                    <th className="p-3 text-center whitespace-nowrap">Quantité</th>
+                    <th className="p-3 text-right whitespace-nowrap">Prix unitaire</th>
+                    <th className="p-3 text-right whitespace-nowrap">Montant Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -102,14 +102,13 @@ export const InvoiceModal: React.FC = () => {
                     qty: Math.max(1, Math.round((sale.totalAmount || 300000) / 15000)),
                     price: 15000
                   }]).map((it, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50">
-                      <td className="p-3.5 font-bold text-slate-900 text-sm">
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="p-3 font-bold text-slate-900 whitespace-nowrap">
                         {it.title && it.title !== 'prod-1' ? it.title : "Royal Sénégal 100% Brisure (Sac 25kg)"}
-                        <span className="block text-[11px] font-normal text-emerald-700 mt-0.5">Sac de riz certifié & contrôlé au chargement</span>
                       </td>
-                      <td className="p-3.5 text-center font-bold text-slate-900 text-sm">{formatNumber(it.qty || 1)} Sacs</td>
-                      <td className="p-3.5 text-right text-slate-700 font-semibold text-sm">{formatFCFA(it.price || 15000)}</td>
-                      <td className="p-3.5 text-right font-black text-slate-900 text-sm">{formatFCFA((it.price || 15000) * (it.qty || 1))}</td>
+                      <td className="p-3 text-center font-bold text-slate-900 whitespace-nowrap">{formatNumber(it.qty || 1)} Sacs</td>
+                      <td className="p-3 text-right text-slate-700 font-mono font-medium whitespace-nowrap">{formatFCFA(it.price || 15000)}</td>
+                      <td className="p-3 text-right font-black text-slate-900 font-mono whitespace-nowrap">{formatFCFA((it.price || 15000) * (it.qty || 1))}</td>
                     </tr>
                   ))}
                 </tbody>
