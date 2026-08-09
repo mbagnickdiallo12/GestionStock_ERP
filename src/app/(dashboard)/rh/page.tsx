@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Search, UserCheck, DollarSign, Edit, Trash2, FileText, PlusCircle, Building2, User, ShieldCheck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate, canManage } from "@/lib/utils";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
@@ -242,21 +242,25 @@ export default function RHPage() {
                           <PlusCircle className="w-3.5 h-3.5" /> Avance
                         </button>
 
-                        <button 
-                          onClick={() => openModal(`edit-employee-${emp.id}`)}
-                          className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Modifier les données RH"
-                        >
-                          <Edit className="w-3.5 h-3.5" /> Modifier
-                        </button>
+                        {canManage(currentUser, 'rh') && (
+                          <>
+                            <button 
+                              onClick={() => openModal(`edit-employee-${emp.id}`)}
+                              className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              title="Modifier les données RH"
+                            >
+                              <Edit className="w-3.5 h-3.5" /> Modifier
+                            </button>
 
-                        <button 
-                          onClick={() => handleDelete(emp.id, emp.name)}
-                          className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
-                          title="Supprimer la fiche"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                            <button 
+                              onClick={() => handleDelete(emp.id, emp.name)}
+                              className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
+                              title="Supprimer la fiche"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

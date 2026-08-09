@@ -210,12 +210,14 @@ export default function InventairePage() {
               Les entrées/sorties quotidiennes figurent dans le module <strong>Stocks & Mouvements</strong>.
               Pour réaliser un comptage contradictoire physique et ajuster le stock système de ce dépôt, lancez une session ci-dessous :
             </p>
-            <button
-              onClick={() => openModal("modal-new-inventory")}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl inline-flex items-center gap-2 cursor-pointer shadow-lg transition-all"
-            >
-              <Plus className="w-4 h-4" /> Lancer l'Inventaire Physique pour {activeDepotName}
-            </button>
+            {canCreate(currentUser, 'inventaire') && (
+              <button
+                onClick={() => openModal("modal-new-inventory")}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl inline-flex items-center gap-2 cursor-pointer shadow-lg transition-all"
+              >
+                <Plus className="w-4 h-4" /> Lancer l'Inventaire Physique pour {activeDepotName}
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

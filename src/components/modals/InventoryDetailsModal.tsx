@@ -3,11 +3,11 @@
 import React from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApp } from "@/context/AppContext";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, canManage } from "@/lib/utils";
 import { Printer, RefreshCw, Wheat } from "lucide-react";
 
 export const InventoryDetailsModal: React.FC = () => {
-  const { activeModal, closeModal, inventories, applyInventoryAdjustment, askConfirm, settings } = useApp();
+  const { activeModal, closeModal, inventories, applyInventoryAdjustment, askConfirm, settings, currentUser } = useApp();
 
   const isDetailsModal = activeModal && activeModal.startsWith("modal-inventory-details-");
   const invId = isDetailsModal ? activeModal.replace("modal-inventory-details-", "") : null;
@@ -38,7 +38,7 @@ export const InventoryDetailsModal: React.FC = () => {
             <button onClick={handlePrint} className="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors">
               <Printer className="w-3.5 h-3.5" /> Imprimer PV (PDF)
             </button>
-            {targetInv.status !== "Ajusté" && (
+            {targetInv.status !== "Ajusté" && canManage(currentUser, 'inventaire') && (
               <button
                 onClick={handleApplyAdjustment}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Search, Users, DollarSign, AlertCircle, CheckCircle, Edit, Trash2, Eye, Mail, MapPin, Phone, ShieldCheck, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, canCreate } from "@/lib/utils";
+import { formatFCFA, canCreate, canManage } from "@/lib/utils";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
@@ -264,20 +264,24 @@ export default function ClientsPage() {
                             <DollarSign className="w-3.5 h-3.5" /> Régler
                           </button>
                         )}
-                        <button
-                          onClick={() => openModal(`edit-client-${c.id}`)}
-                          className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                          title="Modifier la fiche client"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(c.id, c.name)}
-                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
-                          title="Supprimer ce client"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canManage(currentUser, 'clients') && (
+                          <>
+                            <button
+                              onClick={() => openModal(`edit-client-${c.id}`)}
+                              className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                              title="Modifier la fiche client"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(c.id, c.name)}
+                              className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                              title="Supprimer ce client"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

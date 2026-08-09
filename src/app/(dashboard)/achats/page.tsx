@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Search, Truck, Ship, FileText, CheckCircle2, Clock, AlertCircle, Trash2, Edit, Anchor, HelpCircle, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate, canManage } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 import { Purchase } from "@/types";
 
@@ -286,37 +286,48 @@ export default function AchatsPage() {
                   
                   {/* Interactive Status & Payment Selectors */}
                   <td className="p-3">
-                    <div className="flex flex-col gap-1.5">
-                      {/* Logistic Arrival Status Dropdown */}
-                      <select
-                        value={p.status}
-                        onChange={(e) => updatePurchase(p.id, { status: e.target.value as Purchase['status'] })}
-                        className={`text-xs font-extrabold px-2.5 py-1 rounded-lg border outline-none cursor-pointer transition-all ${
-                          p.status === 'Livré' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
-                          p.status === 'En Transit' ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' :
-                          p.status === 'Dédouanement' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
-                          'bg-purple-500/20 text-purple-400 border-purple-500/40'
-                        }`}
-                        title="Changer le statut logistique de l'arrivage"
-                      >
-                        <option value="Commandé" className="bg-[#1e293b] text-white">📦 Commandé</option>
-                        <option value="En Transit" className="bg-[#1e293b] text-blue-400">🚢 En Transit (Mer)</option>
-                        <option value="Dédouanement" className="bg-[#1e293b] text-amber-400">⚓ Dédouanement (Port)</option>
-                        <option value="Livré" className="bg-[#1e293b] text-emerald-400">✅ Livré (Crédite le Stock)</option>
-                      </select>
+                    {canManage(currentUser, 'achats') ? (
+                      <div className="flex flex-col gap-1.5">
+                        {/* Logistic Arrival Status Dropdown */}
+                        <select
+                          value={p.status}
+                          onChange={(e) => updatePurchase(p.id, { status: e.target.value as Purchase['status'] })}
+                          className={`text-xs font-extrabold px-2.5 py-1 rounded-lg border outline-none cursor-pointer transition-all ${
+                            p.status === 'Livré' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
+                            p.status === 'En Transit' ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' :
+                            p.status === 'Dédouanement' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
+                            'bg-purple-500/20 text-purple-400 border-purple-500/40'
+                          }`}
+                          title="Changer le statut logistique de l'arrivage"
+                        >
+                          <option value="Commandé" className="bg-[#1e293b] text-white">📦 Commandé</option>
+                          <option value="En Transit" className="bg-[#1e293b] text-blue-400">🚢 En Transit (Mer)</option>
+                          <option value="Dédouanement" className="bg-[#1e293b] text-amber-400">⚓ Dédouanement (Port)</option>
+                          <option value="Livré" className="bg-[#1e293b] text-emerald-400">✅ Livré (Crédite le Stock)</option>
+                        </select>
 
-                      {/* Payment Status Dropdown */}
-                      <select
-                        value={p.payment}
-                        onChange={(e) => updatePurchase(p.id, { payment: e.target.value as Purchase['payment'] })}
-                        className="text-[10px] font-semibold bg-[#0f172a] border border-white/15 text-slate-300 px-2 py-0.5 rounded-md outline-none cursor-pointer"
-                        title="Changer le statut de paiement fournisseur"
-                      >
-                        <option value="En attente">⏳ En attente</option>
-                        <option value="Acompte 50%">💵 Acompte 50%</option>
-                        <option value="Payé">💳 Payé 100%</option>
-                      </select>
-                    </div>
+                        {/* Payment Status Dropdown */}
+                        <select
+                          value={p.payment}
+                          onChange={(e) => updatePurchase(p.id, { payment: e.target.value as Purchase['payment'] })}
+                          className="text-[10px] font-semibold bg-[#0f172a] border border-white/15 text-slate-300 px-2 py-0.5 rounded-md outline-none cursor-pointer"
+                          title="Changer le statut de paiement fournisseur"
+                        >
+                          <option value="En attente">⏳ En attente</option>
+                          <option value="Acompte 50%">💵 Acompte 50%</option>
+                          <option value="Payé">💳 Payé 100%</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 text-xs">
+                        <span className={`px-2 py-0.5 rounded font-extrabold text-[11px] block text-center ${
+                          p.status === 'Livré' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          {p.status}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block text-center">{p.payment}</span>
+                      </div>
+                    )}
                   </td>
 
                   <td className="p-3 text-right">
@@ -328,18 +339,23 @@ export default function AchatsPage() {
                       >
                         <FileText className="w-3.5 h-3.5" /> Bon BR
                       </button>
-                      <button 
-                        onClick={() => openModal(`edit-purchase-${p.id}`)}
-                        className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <Edit className="w-3.5 h-3.5" /> Modifier
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(p.id)}
-                        className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {canManage(currentUser, 'achats') && (
+                        <>
+                          <button 
+                            onClick={() => openModal(`edit-purchase-${p.id}`)}
+                            className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Edit className="w-3.5 h-3.5" /> Modifier
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(p.id)}
+                            className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
+                            title="Supprimer la commande d'achat"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

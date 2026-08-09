@@ -48,3 +48,16 @@ export function canCreate(user: UserAccount | null | undefined, moduleKey?: stri
   }
   return false;
 }
+
+export function canManage(user: UserAccount | null | undefined, moduleKey?: string): boolean {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (user.role === 'personnalise') {
+    if (!moduleKey) return true;
+    return hasPermission(user, moduleKey);
+  }
+  return false;
+}
+
+export const canDelete = canManage;
+export const canEdit = canManage;

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Search, ShieldCheck, UserCheck, Lock, Edit, Trash2, Key, CheckCircle, XCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { canCreate } from "@/lib/utils";
+import { canCreate, canManage } from "@/lib/utils";
 
 import { SkeletonTable } from "@/components/ui/Skeleton";
 
@@ -148,29 +148,34 @@ export default function UtilisateursPage() {
                     </span>
                   </td>
                   <td className="p-3 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => openModal(`reset-pass-${u.username}`)}
-                        className="bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Réinitialiser le mot de passe"
-                      >
-                        <Key className="w-3.5 h-3.5" /> Pass
-                      </button>
-                      <button 
-                        onClick={() => openModal(`edit-user-${u.username}`)}
-                        className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <Edit className="w-3.5 h-3.5" /> Modifier
-                      </button>
-                      {u.role !== 'admin' && (
-                        <button 
-                          onClick={() => handleDelete(u.username, u.name)}
-                          className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
+                    {canManage(currentUser, 'utilisateurs') ? (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openModal(`reset-pass-${u.username}`)}
+                          className="bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Réinitialiser le mot de passe"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Key className="w-3.5 h-3.5" /> Pass
                         </button>
-                      )}
-                    </div>
+                        <button 
+                          onClick={() => openModal(`edit-user-${u.username}`)}
+                          className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Edit className="w-3.5 h-3.5" /> Modifier
+                        </button>
+                        {u.role !== 'admin' && (
+                          <button 
+                            onClick={() => handleDelete(u.username, u.name)}
+                            className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
+                            title="Révoquer cet utilisateur"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-500 text-xs italic">Consultation</span>
+                    )}
                   </td>
                 </tr>
               ))}

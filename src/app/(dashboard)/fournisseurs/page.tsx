@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Search, Pencil, Trash2, Globe, Phone, Mail, Clock, Star } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { canCreate } from "@/lib/utils";
+import { canCreate, canManage } from "@/lib/utils";
 
 import { SkeletonTable } from "@/components/ui/Skeleton";
 
@@ -106,22 +106,24 @@ export default function FournisseursPage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-2">
-              <button
-                onClick={() => openModal(`edit-supplier-${s.id}`)}
-                className="bg-slate-700/50 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                title="Modifier les coordonnées du fournisseur"
-              >
-                <Pencil className="w-3.5 h-3.5 text-emerald-400" /> Modifier
-              </button>
-              <button
-                onClick={() => handleDelete(s.id, s.name)}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded-lg text-xs font-medium flex items-center justify-center cursor-pointer transition-colors"
-                title="Supprimer ce fournisseur"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            {canManage(currentUser, 'fournisseurs') && (
+              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => openModal(`edit-supplier-${s.id}`)}
+                  className="bg-slate-700/50 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Modifier les coordonnées du fournisseur"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-emerald-400" /> Modifier
+                </button>
+                <button
+                  onClick={() => handleDelete(s.id, s.name)}
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded-lg text-xs font-medium flex items-center justify-center cursor-pointer transition-colors"
+                  title="Supprimer ce fournisseur"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

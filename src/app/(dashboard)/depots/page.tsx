@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Search, MapPin, Warehouse, User, Phone, Pencil, Trash2, ClipboardList } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate, canManage } from "@/lib/utils";
 
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
@@ -162,21 +162,23 @@ export default function DepotsPage() {
                   <ClipboardList className="w-4 h-4" /> Inventaire Dépôt
                 </button>
 
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => openModal(`edit-depot-${d.id}`)}
-                    className="bg-slate-700/50 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-emerald-400" /> Modifier
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(d.id, d.name)}
-                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                    title="Supprimer ce dépôt"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {canManage(currentUser, 'depots') && (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => openModal(`edit-depot-${d.id}`)}
+                      className="bg-slate-700/50 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-emerald-400" /> Modifier
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(d.id, d.name)}
+                      className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                      title="Supprimer ce dépôt"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -5,7 +5,7 @@ import { Plus, Package, Edit, Trash2, Search, Upload, Image as ImageIcon, X, Tag
 import { useApp } from "@/context/AppContext";
 import { Modal } from "@/components/ui/Modal";
 import { Product } from "@/types";
-import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate, canManage } from "@/lib/utils";
 
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
@@ -200,22 +200,26 @@ export default function ProduitsPage() {
                     <td className="p-3 font-mono"><span className="text-emerald-400 font-bold">+{formatFCFA(margin)}</span></td>
                     <td className="p-3"><span className="bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded text-xs font-bold">{formatNumber(p.alertThreshold)} Sacs</span></td>
                     <td className="p-3">
-                      <div className="flex items-center gap-1.5">
-                        <button 
-                          onClick={() => openModal(`edit-product-${p.id}`)}
-                          className="bg-slate-700/50 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Modifier les prix, photo et catégorie"
-                        >
-                          <Edit className="w-3.5 h-3.5 text-emerald-400" /> Modifier
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(p.id, p.title)}
-                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded text-xs font-medium flex items-center justify-center cursor-pointer transition-colors"
-                          title="Supprimer ce produit"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {canManage(currentUser, 'produits') ? (
+                        <div className="flex items-center gap-1.5">
+                          <button 
+                            onClick={() => openModal(`edit-product-${p.id}`)}
+                            className="bg-slate-700/50 hover:bg-slate-700 text-white px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Modifier les prix, photo et catégorie"
+                          >
+                            <Edit className="w-3.5 h-3.5 text-emerald-400" /> Modifier
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(p.id, p.title)}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-1.5 rounded text-xs font-medium flex items-center justify-center cursor-pointer transition-colors"
+                            title="Supprimer ce produit"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-500 text-xs italic">Lecture seule</span>
+                      )}
                     </td>
                   </tr>
                 );
