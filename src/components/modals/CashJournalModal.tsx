@@ -72,40 +72,40 @@ export const CashJournalModal: React.FC = () => {
         <div className="flex items-center justify-between w-full no-print">
           <button
             onClick={handlePrint}
-            className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors"
+            className="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
-            <Printer className="w-4 h-4" /> Imprimer / PDF
+            <Printer className="w-3.5 h-3.5" /> Imprimer / PDF
           </button>
           <button
             onClick={closeModal}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors"
           >
             Fermer
           </button>
         </div>
       )}
     >
-      <div className="printable-document bg-white text-slate-900 p-6 rounded-xl font-sans space-y-5 border border-slate-200 shadow-sm">
+      <div className="printable-document bg-white text-slate-900 p-5 rounded-xl font-sans space-y-4 border border-slate-200 shadow-sm text-xs">
         
-        {/* Modern Minimalist Header */}
-        <div className="flex justify-between items-start pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-3">
+        {/* Modern Compact Header */}
+        <div className="flex justify-between items-start pb-3 border-b border-slate-200">
+          <div className="flex items-center gap-2.5">
             {settings?.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="h-12 w-auto object-contain" />
+              <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
             ) : (
-              <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
-                <Wheat className="w-6 h-6" />
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base shrink-0">
+                <Wheat className="w-5 h-5" />
               </div>
             )}
             <div>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">{settings?.companyName || "RizStock ERP"}</h1>
-              <p className="text-[11px] text-slate-500">{settings?.address || "Dakar, Sénégal"} • Tél: {settings?.phone || "+221 33 800 00 00"}</p>
+              <h1 className="text-sm font-bold text-slate-900 leading-tight">{settings?.companyName || "RizStock ERP"}</h1>
+              <p className="text-[10px] text-slate-500">{settings?.address || "Dakar, Sénégal"} • Tél: {settings?.phone || "+221 33 800 00 00"}</p>
             </div>
           </div>
 
           <div className="text-right">
-            <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">Journal de Caisse</h2>
-            <div className="text-[11px] text-slate-600 mt-0.5 space-x-3 font-medium">
+            <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Journal de Caisse</h2>
+            <div className="text-[10px] text-slate-600 mt-0.5 space-x-2 font-medium">
               <span>Dépôt: <strong className="text-slate-900">{depotNameDisplay}</strong></span>
               <span>•</span>
               <span>Date: <span className="text-slate-900">{printDate}</span></span>
@@ -113,33 +113,33 @@ export const CashJournalModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Minimalist Key Metric Line */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+        {/* Compact Key Metric Line */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Entrées Cash</span>
-            <span className="text-sm font-extrabold text-emerald-700 font-mono whitespace-nowrap">+{formatFCFA(totalCashIn)}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Entrées Cash</span>
+            <span className="text-xs font-bold text-emerald-700 font-mono whitespace-nowrap">+{formatFCFA(totalCashIn)}</span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Entrées Wave</span>
-            <span className="text-sm font-extrabold text-blue-700 font-mono whitespace-nowrap">+{formatFCFA(totalWaveIn)}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Entrées Wave</span>
+            <span className="text-xs font-bold text-blue-700 font-mono whitespace-nowrap">+{formatFCFA(totalWaveIn)}</span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Total Sorties</span>
-            <span className="text-sm font-extrabold text-rose-700 font-mono whitespace-nowrap">-{formatFCFA(totalOut)}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Total Sorties</span>
+            <span className="text-xs font-bold text-rose-700 font-mono whitespace-nowrap">-{formatFCFA(totalOut)}</span>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">Solde Net Espèces</span>
-            <span className="text-sm font-extrabold text-slate-900 font-mono whitespace-nowrap">{formatFCFA(netCashFlow)}</span>
+            <span className="text-[9px] uppercase font-bold text-slate-500 block">Solde Net Espèces</span>
+            <span className="text-xs font-bold text-slate-900 font-mono whitespace-nowrap">{formatFCFA(netCashFlow)}</span>
           </div>
         </div>
 
         {/* Screen Filters (Hidden in PDF print) */}
-        <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-2.5 rounded-xl">
-          <div className="flex items-center gap-2 bg-white border border-slate-300 px-3 py-1 rounded-lg flex-1 min-w-[200px]">
+        <div className="no-print flex flex-wrap items-center justify-between gap-2 bg-slate-100 p-2 rounded-lg">
+          <div className="flex items-center gap-2 bg-white border border-slate-300 px-2.5 py-1 rounded flex-1 min-w-[180px]">
             <Search className="w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Rechercher par référence, client..."
+              placeholder="Rechercher..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent text-slate-900 text-xs outline-none w-full"
@@ -149,7 +149,7 @@ export const CashJournalModal: React.FC = () => {
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="bg-white border border-slate-300 text-slate-900 text-xs px-3 py-1 rounded-lg outline-none cursor-pointer font-medium"
+            className="bg-white border border-slate-300 text-slate-900 text-xs px-2.5 py-1 rounded outline-none cursor-pointer font-medium"
           >
             <option value="all">Tous les Modes de Règlement</option>
             <option value="Espece">Espèces / Cash</option>
@@ -160,41 +160,41 @@ export const CashJournalModal: React.FC = () => {
           </select>
         </div>
 
-        {/* Clean Minimal Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-xl">
-          <table className="w-full text-left text-xs">
+        {/* Clean Compact Table */}
+        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+          <table className="w-full text-left text-[11px]">
             <thead>
-              <tr className="border-b border-slate-200 font-bold uppercase text-slate-600 bg-slate-100">
-                <th className="py-2.5 px-3 whitespace-nowrap">Date</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Référence</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Tiers / Client</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Opération</th>
-                <th className="py-2.5 px-3 whitespace-nowrap">Règlement</th>
-                <th className="py-2.5 px-3 text-right whitespace-nowrap">Montant</th>
+              <tr className="border-b border-slate-200 font-bold uppercase text-[10px] text-slate-600 bg-slate-100">
+                <th className="py-1.5 px-2.5 whitespace-nowrap">Date</th>
+                <th className="py-1.5 px-2.5 whitespace-nowrap">Référence</th>
+                <th className="py-1.5 px-2.5 whitespace-nowrap">Tiers / Client</th>
+                <th className="py-1.5 px-2.5 whitespace-nowrap">Opération</th>
+                <th className="py-1.5 px-2.5 whitespace-nowrap">Règlement</th>
+                <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Montant</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {journalEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-slate-400 italic">
+                  <td colSpan={6} className="py-4 text-center text-slate-400 italic text-[11px]">
                     Aucune écriture dans le journal de caisse.
                   </td>
                 </tr>
               ) : (
                 journalEntries.map((entry, idx) => (
                   <tr key={idx} className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{entry.date}</td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap">{entry.id}</td>
-                    <td className="py-2.5 px-3 font-medium text-slate-900 whitespace-nowrap">{entry.party}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
+                    <td className="py-1.5 px-2.5 text-slate-600 whitespace-nowrap">{entry.date}</td>
+                    <td className="py-1.5 px-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">{entry.id}</td>
+                    <td className="py-1.5 px-2.5 font-medium text-slate-900 whitespace-nowrap">{entry.party}</td>
+                    <td className="py-1.5 px-2.5 whitespace-nowrap">
                       {entry.type === 'VENTE' ? (
                         <span className="text-emerald-700 font-semibold">Vente ({entry.bags} sacs)</span>
                       ) : (
                         <span className="text-rose-700 font-semibold">Dépense Caisse</span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{entry.paymentMode}</td>
-                    <td className={`py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap ${entry.amount >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    <td className="py-1.5 px-2.5 text-slate-600 whitespace-nowrap">{entry.paymentMode}</td>
+                    <td className={`py-1.5 px-2.5 text-right font-mono font-bold whitespace-nowrap ${entry.amount >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                       {entry.amount >= 0 ? `+${formatFCFA(entry.amount)}` : formatFCFA(entry.amount)}
                     </td>
                   </tr>
@@ -205,17 +205,17 @@ export const CashJournalModal: React.FC = () => {
         </div>
 
         {/* Minimal Signatures */}
-        <div className="grid grid-cols-2 gap-8 text-xs pt-6 border-t border-slate-200 font-sans">
+        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 font-sans text-[10px]">
           <div>
-            <span className="font-bold text-slate-600 block uppercase text-[10px]">Visa Caissier</span>
-            <div className="h-10 border-b border-slate-300 mt-2" />
-            <span className="text-[10px] text-slate-400 block mt-1">{currentUser?.name || "Caissier"}</span>
+            <span className="font-bold text-slate-600 block uppercase">Visa Caissier</span>
+            <div className="h-8 border-b border-slate-300 mt-1" />
+            <span className="text-slate-400 block mt-0.5">{currentUser?.name || "Caissier"}</span>
           </div>
 
           <div className="text-right">
-            <span className="font-bold text-slate-600 block uppercase text-[10px]">Visa Comptabilité</span>
-            <div className="h-10 border-b border-slate-300 mt-2" />
-            <span className="text-[10px] text-slate-400 block mt-1">Signature autorisée</span>
+            <span className="font-bold text-slate-600 block uppercase">Visa Comptabilité</span>
+            <div className="h-8 border-b border-slate-300 mt-1" />
+            <span className="text-slate-400 block mt-0.5">Signature autorisée</span>
           </div>
         </div>
       </div>

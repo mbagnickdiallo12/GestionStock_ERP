@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Printer, X } from "lucide-react";
+import { Printer, X, Wheat } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber } from "@/lib/utils";
 
@@ -23,76 +23,72 @@ export const InvoiceModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div className="bg-[#1e293b] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between no-print">
-          <h3 className="font-bold text-lg text-white">Facture Officielle de Vente N° {sale.id}</h3>
+        <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between no-print">
+          <h3 className="font-bold text-sm text-white">Facture Officielle N° {sale.id}</h3>
           <button
             onClick={closeModal}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body: Printable Receipt Box */}
-        <div className="p-6 overflow-y-auto flex-1">
-          {/* Printable Document Box - Full A4 Clean Invoice matching reference image */}
-          <div className="printable-document bg-white text-slate-900 p-8 font-sans space-y-7 border border-slate-200 rounded-xl">
+        <div className="p-5 overflow-y-auto flex-1">
+          <div className="printable-document bg-white text-slate-900 p-5 rounded-xl font-sans space-y-4 border border-slate-200 text-xs shadow-sm">
             
-            {/* 1. Header Flex: Logo & Company Name (Left) | Facture Title & Dates (Right) */}
-            <div className="flex justify-between items-start pb-6 border-b border-slate-200">
-              <div className="flex items-center gap-4">
+            {/* Header Flex */}
+            <div className="flex justify-between items-start pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2.5">
                 {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo" className="h-16 w-auto object-contain" />
+                  <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
                 ) : (
-                  <div className="w-14 h-14 rounded-xl bg-[#10b981] text-slate-950 flex items-center justify-center font-black text-2xl shadow-md">
-                    RZ
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base shrink-0">
+                    <Wheat className="w-5 h-5" />
                   </div>
                 )}
                 <div>
-                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">{settings.companyName}</h1>
-                  <p className="text-xs text-slate-500 font-medium">{settings.address}</p>
-                  <p className="text-xs text-slate-500 font-medium">Tél: {settings.phone} | RCCM: {settings.rccm}</p>
+                  <h1 className="text-sm font-bold text-slate-900 leading-tight">{settings.companyName}</h1>
+                  <p className="text-[10px] text-slate-500">{settings.address} • Tél: {settings.phone}</p>
                 </div>
               </div>
 
               <div className="text-right">
-                <h2 className="text-2xl font-black text-slate-900 tracking-wider">FACTURE - {sale.id}</h2>
-                <p className="text-xs text-slate-600 mt-1 font-semibold">Date de facturation : <span className="text-slate-900">{sale.date}</span></p>
-                <p className="text-xs text-slate-600 font-semibold">Mode de règlement : <span className="text-emerald-700 font-bold">{sale.paymentMode}</span></p>
+                <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">FACTURE</h2>
+                <div className="text-[10px] text-slate-600 mt-0.5 space-x-2 font-medium">
+                  <span>N°: <strong className="text-slate-900 font-mono">{sale.id}</strong></span>
+                  <span>•</span>
+                  <span>Date: <span className="text-slate-900">{sale.date}</span></span>
+                </div>
               </div>
             </div>
 
-            {/* 2. Client & Issuer Info Section (Side by Side) */}
-            <div className="grid grid-cols-2 gap-8 text-xs pt-2">
-              <div className="space-y-1 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Émetteur / Vendeur</span>
-                <p className="font-extrabold text-sm text-slate-900">{settings.companyName}</p>
-                <p className="text-slate-600">Dépôt d'expédition : <strong className="text-slate-900">{depot ? depot.name : (sales.find(s => s.id === sale.id)?.depotId ? depots.find(d => d.id === sale.depotId)?.name : depots[0]?.name || "Dépôt Central")}</strong></p>
+            {/* Client & Issuer Metadata Line */}
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px]">
+              <div>
+                <span className="text-[9px] font-bold text-slate-400 uppercase block">Vendeur / Dépôt</span>
+                <p className="font-bold text-slate-900">{settings.companyName}</p>
+                <p className="text-slate-600 text-[10px]">Dépôt: {depot ? depot.name : "Dépôt Central"}</p>
               </div>
 
-              <div className="space-y-1 bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-right">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Facturé à / Client</span>
-                <p className="font-extrabold text-sm text-slate-900">{sale.clientName || "Client Comptoir"}</p>
-                <p className="text-slate-600">Adresse : Marché Tilène / Dakar, Sénégal</p>
+              <div className="text-right">
+                <span className="text-[9px] font-bold text-slate-400 uppercase block">Client / Facturé à</span>
+                <p className="font-bold text-slate-900">{sale.clientName || "Client Comptoir"}</p>
+                <p className="text-slate-600 text-[10px]">Règlement: {sale.paymentMode}</p>
               </div>
             </div>
 
-            {/* 3. Greeting Line */}
-            <div className="text-xs font-semibold text-slate-600 italic">
-              Merci de votre confiance et de votre fidélité !
-            </div>
-
-            {/* 4. Simple Clean Modern Table */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs border-collapse">
+            {/* Table */}
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <table className="w-full text-left text-[11px]">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="p-3 whitespace-nowrap">Désignation Produit</th>
-                    <th className="p-3 text-center whitespace-nowrap">Quantité</th>
-                    <th className="p-3 text-right whitespace-nowrap">Prix unitaire</th>
-                    <th className="p-3 text-right whitespace-nowrap">Montant Total</th>
+                  <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
+                    <th className="py-1.5 px-2.5 whitespace-nowrap">Désignation Produit</th>
+                    <th className="py-1.5 px-2.5 text-center whitespace-nowrap">Quantité</th>
+                    <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Prix Unitaire</th>
+                    <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Montant Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -103,75 +99,61 @@ export const InvoiceModal: React.FC = () => {
                     price: 15000
                   }]).map((it, idx) => (
                     <tr key={idx} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold text-slate-900 whitespace-nowrap">
+                      <td className="py-1.5 px-2.5 font-bold text-slate-900 whitespace-nowrap">
                         {it.title && it.title !== 'prod-1' ? it.title : "Royal Sénégal 100% Brisure (Sac 25kg)"}
                       </td>
-                      <td className="p-3 text-center font-bold text-slate-900 whitespace-nowrap">{formatNumber(it.qty || 1)} Sacs</td>
-                      <td className="p-3 text-right text-slate-700 font-mono font-medium whitespace-nowrap">{formatFCFA(it.price || 15000)}</td>
-                      <td className="p-3 text-right font-black text-slate-900 font-mono whitespace-nowrap">{formatFCFA((it.price || 15000) * (it.qty || 1))}</td>
+                      <td className="py-1.5 px-2.5 text-center font-bold text-slate-900 whitespace-nowrap">{formatNumber(it.qty || 1)} Sacs</td>
+                      <td className="py-1.5 px-2.5 text-right text-slate-700 font-mono font-medium whitespace-nowrap">{formatFCFA(it.price || 15000)}</td>
+                      <td className="py-1.5 px-2.5 text-right font-black text-slate-900 font-mono whitespace-nowrap">{formatFCFA((it.price || 15000) * (it.qty || 1))}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* 5. Totals Breakdown (Right Aligned matching model) & Payment Info (Left) */}
-            <div className="flex justify-between items-start pt-2">
-              <div className="space-y-2 text-xs text-slate-600 max-w-xs">
-                <div>
-                  <strong className="text-slate-900 font-bold">Moyens de paiement :</strong>
-                  <p className="text-slate-700">{sale.paymentMode} (Espèces / Wave / Virement / Chèque)</p>
-                </div>
-                <div>
-                  <strong className="text-slate-900 font-bold">Conditions de paiement :</strong>
-                  <p className="text-slate-700">Comptant à la livraison / Réception des sacs</p>
-                </div>
+            {/* Totals Breakdown */}
+            <div className="flex justify-between items-start pt-1 text-[11px]">
+              <div className="text-[10px] text-slate-500 italic max-w-xs">
+                Merci de votre confiance et de votre fidélité !
               </div>
 
-              <div className="w-72 border-t-2 border-b-2 border-slate-300 py-3 space-y-2 text-xs">
-                <div className="flex justify-between font-semibold text-slate-700">
+              <div className="w-56 border-t border-b border-slate-300 py-2 space-y-1">
+                <div className="flex justify-between text-slate-600">
                   <span>Total HT :</span>
-                  <span className="font-bold text-slate-900">{formatFCFA(sale.totalAmount)}</span>
+                  <span className="font-mono font-bold text-slate-900">{formatFCFA(sale.totalAmount)}</span>
                 </div>
-                <div className="flex justify-between font-semibold text-slate-700">
+                <div className="flex justify-between text-slate-600 text-[10px]">
                   <span>TVA (0% Exonéré) :</span>
                   <span>0 FCFA</span>
                 </div>
-                <div className="flex justify-between font-black text-base text-slate-900 pt-2 border-t border-slate-200">
+                <div className="flex justify-between font-extrabold text-xs text-slate-900 pt-1 border-t border-slate-200">
                   <span>Total TTC :</span>
-                  <span className="text-emerald-800 text-lg">{formatFCFA(sale.totalAmount)}</span>
+                  <span className="text-emerald-700 font-mono text-sm">{formatFCFA(sale.totalAmount)}</span>
                 </div>
               </div>
             </div>
 
-            {/* 6. Footer Signatures Block */}
-            <div className="pt-8 grid grid-cols-2 gap-8 text-xs border-t border-slate-200">
+            {/* Signatures */}
+            <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 font-sans text-[10px]">
               <div>
-                <p className="font-extrabold text-slate-800">Signature & Cachet Client :</p>
-                <div className="h-16 border-b-2 border-dashed border-slate-300 mt-2 rounded-lg bg-slate-50/50"></div>
+                <span className="font-bold text-slate-600 block uppercase">Signature Client</span>
+                <div className="h-8 border-b border-slate-300 mt-1" />
               </div>
               <div className="text-right">
-                <p className="font-extrabold text-slate-800">Pour l'Émetteur / Gérant de Dépôt :</p>
-                <div className="h-16 border-b-2 border-dashed border-slate-300 mt-2 rounded-lg bg-slate-50/50"></div>
+                <span className="font-bold text-slate-600 block uppercase">Signature Vendeur / Gérant</span>
+                <div className="h-8 border-b border-slate-300 mt-1" />
               </div>
             </div>
-
-            {/* 7. Centered Document Footer */}
-            <div className="text-center text-[10px] text-slate-400 pt-4 border-t border-slate-100">
-              <p className="font-bold text-slate-600">{settings.companyName}</p>
-              <p>{settings.address} — Tél: {settings.phone} — RCCM: {settings.rccm}</p>
-            </div>
-
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-white/10 bg-black/20 flex items-center justify-end gap-3 no-print">
-          <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+        <div className="px-5 py-2.5 border-t border-white/10 bg-black/20 flex items-center justify-end gap-2.5 no-print">
+          <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">
             Fermer
           </button>
-          <button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
-            <Printer className="w-4 h-4" /> Imprimer Facture (PDF)
+          <button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+            <Printer className="w-3.5 h-3.5" /> Imprimer Facture (PDF)
           </button>
         </div>
       </div>
