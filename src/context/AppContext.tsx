@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { Depot, Product, StockMatrix, Sale, StockMovement, Purchase, Supplier, Client, Expense, Employee, UserAccount, CompanySettings, SaleItem, AuditLog, DebtTransaction, InventorySession, Category, CashSession } from "@/types";
+import { Depot, Product, StockMatrix, Sale, StockMovement, Purchase, Supplier, Client, Expense, Employee, UserAccount, CompanySettings, SaleItem, AuditLog, DebtTransaction, InventorySession, Category, CashSession, BackupVersion } from "@/types";
 import { INITIAL_SETTINGS, INITIAL_DEPOTS, INITIAL_PRODUCTS, INITIAL_STOCKS, INITIAL_SALES, INITIAL_MOVEMENTS, INITIAL_PURCHASES, INITIAL_SUPPLIERS, INITIAL_CLIENTS, INITIAL_DEBT_TRANSACTIONS, INITIAL_INVENTORIES, INITIAL_EXPENSES, INITIAL_EMPLOYEES, INITIAL_USERS, INITIAL_AUDIT_LOGS, INITIAL_CATEGORIES, INITIAL_CASH_SESSIONS } from "@/lib/mockData";
 import { formatFCFA, formatNumber } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -125,6 +125,13 @@ interface AppContextType {
   addStockMovement: (mvt: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string }) => void;
   transferStock: (srcId: string, destId: string, prodId: string, qty: number, truck: string) => void;
   addExpense: (exp: Omit<Expense, 'id' | 'date'>) => void;
+
+  backupVersions: BackupVersion[];
+  createBackupSnapshot: (label: string, type?: 'auto_reset' | 'manual_export' | 'manual_upload') => BackupVersion;
+  restoreBackupVersion: (versionId: string) => void;
+  deleteBackupVersion: (versionId: string) => void;
+  importBackupJSON: (jsonData: any) => boolean;
+  resetSystemWithAutoBackup: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -163,6 +170,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [inventories, setInventories] = useState<InventorySession[]>(INITIAL_INVENTORIES);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [backupVersions, setBackupVersions] = useState<BackupVersion[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Backup_Versions");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+    }
+    return [];
+  });
   const [users, setUsers] = useState<UserAccount[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("RizStock_Users");
@@ -621,6 +640,258 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logActivity("PARAMETRE", "Mise à jour des paramètres généraux & en-tête de facturation de l'entreprise");
     showToast("Paramètres de l'entreprise enregistrés dans Supabase !", "success");
     refreshFromSupabase();
+  };
+
+  const createBackupSnapshot = (label: string, type: 'auto_reset' | 'manual_export' | 'manual_upload' = 'manual_export'): BackupVersion => {
+    const id = `BACKUP-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const timestamp = new Date().toISOString();
+    const totalRev = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+
+    const snapshot: BackupVersion = {
+      id,
+      timestamp,
+      label,
+      type,
+      depotsCount: depots.length,
+      productsCount: products.length,
+      salesCount: sales.length,
+      totalRevenue: totalRev,
+      data: {
+        settings,
+        categories,
+        depots,
+        products,
+        stocks,
+        sales,
+        expenses,
+        clients,
+        suppliers,
+        employees,
+        users,
+        purchases,
+        inventories,
+        cashSessions,
+        movements,
+        debtTransactions
+      }
+    };
+
+    setBackupVersions(prev => {
+      const next = [snapshot, ...prev.filter(b => b.id !== id)].slice(0, 30);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Backup_Versions", JSON.stringify(next));
+      }
+      return next;
+    });
+
+    return snapshot;
+  };
+
+  const restoreBackupVersion = (versionId: string) => {
+    const version = backupVersions.find(v => v.id === versionId);
+    if (!version || !version.data) {
+      showToast("Version de sauvegarde introuvable !", "error");
+      return;
+    }
+
+    const { data } = version;
+
+    if (data.settings) {
+      setSettings(data.settings);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Settings", JSON.stringify(data.settings));
+    }
+    if (data.categories && Array.isArray(data.categories)) {
+      setCategories(data.categories);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Categories", JSON.stringify(data.categories));
+    }
+    if (data.depots && Array.isArray(data.depots)) {
+      setDepots(data.depots);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Depots", JSON.stringify(data.depots));
+    }
+    if (data.products && Array.isArray(data.products)) {
+      setProducts(data.products);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Products", JSON.stringify(data.products));
+    }
+    if (data.stocks && typeof data.stocks === "object") {
+      setStocks(data.stocks);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Stocks", JSON.stringify(data.stocks));
+    }
+    if (data.sales && Array.isArray(data.sales)) {
+      setSales(data.sales);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Sales", JSON.stringify(data.sales));
+    }
+    if (data.expenses && Array.isArray(data.expenses)) {
+      setExpenses(data.expenses);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Expenses", JSON.stringify(data.expenses));
+    }
+    if (data.clients && Array.isArray(data.clients)) {
+      setClients(data.clients);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Clients", JSON.stringify(data.clients));
+    }
+    if (data.suppliers && Array.isArray(data.suppliers)) {
+      setSuppliers(data.suppliers);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Suppliers", JSON.stringify(data.suppliers));
+    }
+    if (data.employees && Array.isArray(data.employees)) {
+      setEmployees(data.employees);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Employees", JSON.stringify(data.employees));
+    }
+    if (data.users && Array.isArray(data.users)) {
+      setUsers(data.users);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Users", JSON.stringify(data.users));
+    }
+    if (data.purchases && Array.isArray(data.purchases)) {
+      setPurchases(data.purchases);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Purchases", JSON.stringify(data.purchases));
+    }
+    if (data.inventories && Array.isArray(data.inventories)) {
+      setInventories(data.inventories);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Inventories", JSON.stringify(data.inventories));
+    }
+    if (data.cashSessions && Array.isArray(data.cashSessions)) {
+      setCashSessions(data.cashSessions);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_CashSessions", JSON.stringify(data.cashSessions));
+    }
+    if (data.movements && Array.isArray(data.movements)) {
+      setMovements(data.movements);
+      if (typeof window !== "undefined") localStorage.setItem("RizStock_Movements", JSON.stringify(data.movements));
+    }
+
+    logActivity("PARAMETRE", `Restauration effectuée depuis la version "${version.label}" (${version.id})`);
+    showToast(`🎉 Base de données restaurée avec succès (${version.salesCount || 0} ventes, ${version.productsCount || 0} produits) !`, "success");
+  };
+
+  const deleteBackupVersion = (versionId: string) => {
+    setBackupVersions(prev => {
+      const next = prev.filter(v => v.id !== versionId);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Backup_Versions", JSON.stringify(next));
+      }
+      return next;
+    });
+    showToast(`Version de sauvegarde ${versionId} supprimée`, "info");
+  };
+
+  const importBackupJSON = (jsonData: any): boolean => {
+    try {
+      if (!jsonData || typeof jsonData !== "object") {
+        showToast("Format de fichier JSON invalide !", "error");
+        return false;
+      }
+
+      const importedDepots = jsonData.depots || jsonData.data?.depots;
+      const importedProducts = jsonData.products || jsonData.data?.products;
+      const importedSales = jsonData.sales || jsonData.data?.sales;
+      const importedStocks = jsonData.stocks || jsonData.data?.stocks;
+      const importedExpenses = jsonData.expenses || jsonData.data?.expenses;
+      const importedClients = jsonData.clients || jsonData.data?.clients;
+      const importedSuppliers = jsonData.suppliers || jsonData.data?.suppliers;
+      const importedEmployees = jsonData.employees || jsonData.data?.employees;
+      const importedUsers = jsonData.users || jsonData.data?.users;
+      const importedPurchases = jsonData.purchases || jsonData.data?.purchases;
+      const importedSettings = jsonData.settings || jsonData.data?.settings;
+
+      createBackupSnapshot(`Sauvegarde de Sécurité Avant Importation (${new Date().toLocaleDateString('fr-FR')})`, 'manual_upload');
+
+      if (importedSettings) {
+        setSettings(importedSettings);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Settings", JSON.stringify(importedSettings));
+      }
+      if (Array.isArray(importedDepots) && importedDepots.length > 0) {
+        setDepots(importedDepots);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Depots", JSON.stringify(importedDepots));
+      }
+      if (Array.isArray(importedProducts) && importedProducts.length > 0) {
+        setProducts(importedProducts);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Products", JSON.stringify(importedProducts));
+      }
+      if (importedStocks && typeof importedStocks === "object") {
+        setStocks(importedStocks);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Stocks", JSON.stringify(importedStocks));
+      }
+      if (Array.isArray(importedSales) && importedSales.length > 0) {
+        setSales(importedSales);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Sales", JSON.stringify(importedSales));
+      }
+      if (Array.isArray(importedExpenses) && importedExpenses.length > 0) {
+        setExpenses(importedExpenses);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Expenses", JSON.stringify(importedExpenses));
+      }
+      if (Array.isArray(importedClients) && importedClients.length > 0) {
+        setClients(importedClients);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Clients", JSON.stringify(importedClients));
+      }
+      if (Array.isArray(importedSuppliers) && importedSuppliers.length > 0) {
+        setSuppliers(importedSuppliers);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Suppliers", JSON.stringify(importedSuppliers));
+      }
+      if (Array.isArray(importedEmployees) && importedEmployees.length > 0) {
+        setEmployees(importedEmployees);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Employees", JSON.stringify(importedEmployees));
+      }
+      if (Array.isArray(importedUsers) && importedUsers.length > 0) {
+        setUsers(importedUsers);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Users", JSON.stringify(importedUsers));
+      }
+      if (Array.isArray(importedPurchases) && importedPurchases.length > 0) {
+        setPurchases(importedPurchases);
+        if (typeof window !== "undefined") localStorage.setItem("RizStock_Purchases", JSON.stringify(importedPurchases));
+      }
+
+      createBackupSnapshot(`Importation Réussie - ${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR').slice(0,5)}`, 'manual_upload');
+
+      logActivity("PARAMETRE", "Restauration manuelle intégrale de la base de données via fichier JSON");
+      showToast("Fichier JSON importé et restauré avec succès !", "success");
+      return true;
+    } catch (err: any) {
+      console.error("Import backup error:", err);
+      showToast(`Erreur lors de la restauration du fichier JSON: ${err.message || err}`, "error");
+      return false;
+    }
+  };
+
+  const resetSystemWithAutoBackup = () => {
+    const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const autoBackup = createBackupSnapshot(`Sauvegarde Automatique avant Réinitialisation (${dateStr})`, 'auto_reset');
+
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("RizStock_Settings");
+      localStorage.removeItem("RizStock_Categories");
+      localStorage.removeItem("RizStock_Depots");
+      localStorage.removeItem("RizStock_Products");
+      localStorage.removeItem("RizStock_Stocks");
+      localStorage.removeItem("RizStock_Sales");
+      localStorage.removeItem("RizStock_Expenses");
+      localStorage.removeItem("RizStock_Clients");
+      localStorage.removeItem("RizStock_Suppliers");
+      localStorage.removeItem("RizStock_Employees");
+      localStorage.removeItem("RizStock_Purchases");
+      localStorage.removeItem("RizStock_Inventories");
+      localStorage.removeItem("RizStock_CashSessions");
+      localStorage.removeItem("RizStock_Movements");
+    }
+
+    setSettings(INITIAL_SETTINGS);
+    setCategories(INITIAL_CATEGORIES);
+    setDepots(INITIAL_DEPOTS);
+    setProducts(INITIAL_PRODUCTS);
+    setStocks(INITIAL_STOCKS);
+    setSales(INITIAL_SALES);
+    setExpenses(INITIAL_EXPENSES);
+    setClients(INITIAL_CLIENTS);
+    setSuppliers(INITIAL_SUPPLIERS);
+    setEmployees(INITIAL_EMPLOYEES);
+    setPurchases(INITIAL_PURCHASES);
+    setInventories(INITIAL_INVENTORIES);
+    setCashSessions(INITIAL_CASH_SESSIONS);
+    setMovements(INITIAL_MOVEMENTS);
+
+    logActivity("PARAMETRE", `Réinitialisation système exécutée. Sauvegarde automatique N° ${autoBackup.id} enregistrée.`);
+    showToast(`Réinitialisation effectuée. Une version de secours (${autoBackup.id}) a été conservée !`, "warning");
+
+    setTimeout(() => {
+      if (typeof window !== "undefined") window.location.reload();
+    }, 1200);
   };
 
   const toggleTheme = () => {
@@ -2110,7 +2381,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       confirmState, askConfirm, closeConfirm,
       toasts, showToast,
       openCashSession, closeCashSession,
-      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense
+      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense,
+      backupVersions, createBackupSnapshot, restoreBackupVersion, deleteBackupVersion, importBackupJSON, resetSystemWithAutoBackup
     }}>
       {children}
     </AppContext.Provider>

@@ -228,3 +228,32 @@ export interface AuditLog {
   ipAddress: string;
   depotName: string;
 }
+
+export interface BackupVersion {
+  id: string;
+  timestamp: string;
+  label: string;
+  type: 'auto_reset' | 'manual_export' | 'manual_upload';
+  depotsCount: number;
+  productsCount: number;
+  salesCount: number;
+  totalRevenue: number;
+  data: {
+    settings?: CompanySettings;
+    categories?: Category[];
+    depots?: Depot[];
+    products?: Product[];
+    stocks?: StockMatrix;
+    sales?: Sale[];
+    expenses?: Expense[];
+    clients?: Client[];
+    suppliers?: Supplier[];
+    employees?: Employee[];
+    users?: UserAccount[];
+    purchases?: Purchase[];
+    inventories?: InventorySession[];
+    cashSessions?: CashSession[];
+    movements?: StockMovement[];
+    debtTransactions?: DebtTransaction[];
+  };
+}
