@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import { Plus, Search, Pencil, Trash2, Globe, Phone, Mail, Clock, Star } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { canCreate } from "@/lib/utils";
 
 import { SkeletonTable } from "@/components/ui/Skeleton";
 
 export default function FournisseursPage() {
-  const { suppliers, openModal, deleteSupplier, askConfirm, isLoading } = useApp();
+  const { suppliers, openModal, deleteSupplier, askConfirm, currentUser, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [countryFilter, setCountryFilter] = useState("all");
@@ -49,12 +50,14 @@ export default function FournisseursPage() {
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Répertoire des Fournisseurs</h1>
           <p className="text-sm text-slate-400 mt-1">Armateurs, traders de riz internationaux (Inde, Thaïlande) et importateurs locaux.</p>
         </div>
-        <button 
-          onClick={() => openModal("modal-add-supplier")}
-          className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Nouveau Fournisseur
-        </button>
+        {canCreate(currentUser, 'fournisseurs') && (
+          <button 
+            onClick={() => openModal("modal-add-supplier")}
+            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Nouveau Fournisseur
+          </button>
+        )}
       </div>
 
       {/* Search & Filter Bar */}

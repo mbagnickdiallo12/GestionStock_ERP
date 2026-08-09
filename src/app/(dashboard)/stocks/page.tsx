@@ -3,13 +3,13 @@
 import React, { useState } from "react";
 import { ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Search, Plus, Minus, FileText, FileCheck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, canCreate } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function StocksPage() {
-  const { movements, depots, products, stocks, openModal, isLoading } = useApp();
+  const { movements, depots, products, stocks, openModal, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [mvtTypeFilter, setMvtTypeFilter] = useState("all");
@@ -52,26 +52,28 @@ export default function StocksPage() {
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Stocks & Mouvements des Dépôts</h1>
           <p className="text-sm text-slate-400 mt-1">Matrice multi-dépôts, bons de livraison (BL), bons de réception (BR) et transferts camionnage.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button 
-            onClick={() => openModal("modal-stock-in")}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Entrée Stock
-          </button>
-          <button 
-            onClick={() => openModal("modal-stock-out")}
-            className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
-          >
-            <Minus className="w-4 h-4" /> Sortie Stock
-          </button>
-          <button 
-            onClick={() => openModal("modal-stock-transfer")}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-900/30 transition-all cursor-pointer"
-          >
-            <ArrowRightLeft className="w-4 h-4" /> Transfert Inter-Dépôts
-          </button>
-        </div>
+        {canCreate(currentUser, 'stocks') && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={() => openModal("modal-stock-in")}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Entrée Stock
+            </button>
+            <button 
+              onClick={() => openModal("modal-stock-out")}
+              className="bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
+            >
+              <Minus className="w-4 h-4" /> Sortie Stock
+            </button>
+            <button 
+              onClick={() => openModal("modal-stock-transfer")}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-900/30 transition-all cursor-pointer"
+            >
+              <ArrowRightLeft className="w-4 h-4" /> Transfert Inter-Dépôts
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stock Matrix Table */}

@@ -5,12 +5,12 @@ import { Plus, Receipt, Search } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Modal } from "@/components/ui/Modal";
 import { Expense } from "@/types";
-import { formatFCFA } from "@/lib/utils";
+import { formatFCFA, canCreate } from "@/lib/utils";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function DepensesPage() {
-  const { expenses, depots, addExpense, openModal, closeModal, isLoading } = useApp();
+  const { expenses, depots, addExpense, openModal, closeModal, currentUser, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -67,12 +67,14 @@ export default function DepensesPage() {
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Dépenses Opérationnelles & Charges Dépôt</h1>
           <p className="text-sm text-slate-400 mt-1">Manutention (manœuvres), transport camion, carburant et charges fixes d'entrepôt.</p>
         </div>
-        <button 
-          onClick={() => openModal("modal-add-expense")}
-          className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-        >
-          <Receipt className="w-4 h-4" /> Enregistrer Dépense
-        </button>
+        {canCreate(currentUser, 'depenses') && (
+          <button 
+            onClick={() => openModal("modal-add-expense")}
+            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+          >
+            <Receipt className="w-4 h-4" /> Enregistrer Dépense
+          </button>
+        )}
       </div>
 
       {/* Search & Filter Bar */}

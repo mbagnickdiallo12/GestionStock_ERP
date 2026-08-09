@@ -5,12 +5,12 @@ import { Plus, Package, Edit, Trash2, Search, Upload, Image as ImageIcon, X, Tag
 import { useApp } from "@/context/AppContext";
 import { Modal } from "@/components/ui/Modal";
 import { Product } from "@/types";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
 
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function ProduitsPage() {
-  const { products, categories, addProduct, deleteProduct, openModal, closeModal, askConfirm, isLoading } = useApp();
+  const { products, categories, addProduct, deleteProduct, openModal, closeModal, askConfirm, currentUser, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -94,21 +94,23 @@ export default function ProduitsPage() {
           <p className="text-sm text-slate-400 mt-1">Variétés de riz, gestion des catégories, contenants (50kg, 25kg), prix d'achat, de vente et photos.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => openModal("modal-manage-categories")}
-            className="bg-[#1e293b] hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-white/10 flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Tag className="w-4 h-4 text-emerald-400" /> Gérer les Catégories ({categories.length})
-          </button>
-          
-          <button
-            onClick={() => openModal("modal-add-product")}
-            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Nouveau Produit
-          </button>
-        </div>
+        {canCreate(currentUser, 'produits') && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => openModal("modal-manage-categories")}
+              className="bg-[#1e293b] hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-white/10 flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <Tag className="w-4 h-4 text-emerald-400" /> Gérer les Catégories ({categories.length})
+            </button>
+            
+            <button
+              onClick={() => openModal("modal-add-product")}
+              className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Nouveau Produit
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search & Filter Bar */}

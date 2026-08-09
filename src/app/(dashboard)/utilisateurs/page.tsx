@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import { Plus, Search, ShieldCheck, UserCheck, Lock, Edit, Trash2, Key, CheckCircle, XCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { canCreate } from "@/lib/utils";
 
 import { SkeletonTable } from "@/components/ui/Skeleton";
 
 export default function UtilisateursPage() {
-  const { users, deleteUser, openModal, askConfirm, isLoading } = useApp();
+  const { users, deleteUser, openModal, askConfirm, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -68,12 +69,14 @@ export default function UtilisateursPage() {
           </h1>
           <p className="text-sm text-slate-400 mt-1">Gestion des accès ERP, définition des rôles personnalisés et matrice des permissions (RBAC).</p>
         </div>
-        <button 
-          onClick={() => openModal("modal-add-user")}
-          className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Enrôler un Utilisateur
-        </button>
+        {canCreate(currentUser, 'utilisateurs') && (
+          <button 
+            onClick={() => openModal("modal-add-user")}
+            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Enrôler un Utilisateur
+          </button>
+        )}
       </div>
 
       {/* Search & Filter Bar */}

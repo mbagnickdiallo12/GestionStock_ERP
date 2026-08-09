@@ -3,14 +3,14 @@
 import React, { useState } from "react";
 import { Plus, Search, Truck, Ship, FileText, CheckCircle2, Clock, AlertCircle, Trash2, Edit, Anchor, HelpCircle, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 import { Purchase } from "@/types";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function AchatsPage() {
-  const { purchases, updatePurchase, deletePurchase, openModal, askConfirm, showToast, isLoading } = useApp();
+  const { purchases, updatePurchase, deletePurchase, openModal, askConfirm, showToast, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusTab, setStatusTab] = useState("all");
@@ -106,12 +106,14 @@ export default function AchatsPage() {
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
           </button>
 
-          <button 
-            onClick={() => openModal("modal-add-purchase")}
-            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Nouvel Arrivage Conteneur
-          </button>
+          {canCreate(currentUser, 'achats') && (
+            <button 
+              onClick={() => openModal("modal-add-purchase")}
+              className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Nouvel Arrivage Conteneur
+            </button>
+          )}
         </div>
       </div>
 

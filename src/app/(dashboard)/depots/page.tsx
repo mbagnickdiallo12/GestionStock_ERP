@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Plus, Search, MapPin, Warehouse, User, Phone, Pencil, Trash2, ClipboardList } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
 
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function DepotsPage() {
-  const { depots, products, stocks, openModal, deleteDepot, askConfirm, setActiveDepotId, isLoading } = useApp();
+  const { depots, products, stocks, openModal, deleteDepot, askConfirm, setActiveDepotId, currentUser, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
@@ -55,12 +55,14 @@ export default function DepotsPage() {
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Gestion des Entrepôts & Dépôts de Riz</h1>
           <p className="text-sm text-slate-400 mt-1">Supervision multi-sites, capacités de stockage en sacs et inventaires par entrepôt.</p>
         </div>
-        <button 
-          onClick={() => openModal("modal-add-depot")}
-          className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Nouveau Dépôt
-        </button>
+        {canCreate(currentUser, 'depots') && (
+          <button 
+            onClick={() => openModal("modal-add-depot")}
+            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Nouveau Dépôt
+          </button>
+        )}
       </div>
 
       {/* Search & Filter Bar */}

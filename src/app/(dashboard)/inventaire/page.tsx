@@ -3,17 +3,20 @@
 import React, { useState } from "react";
 import { Plus, Search, ClipboardList, CheckCircle2, AlertTriangle, Eye, RefreshCw, FileSpreadsheet, Building2, PackageCheck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, canCreate } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function InventairePage() {
-  const { inventories, depots, activeDepotId, setActiveDepotId, openModal, showToast, isLoading } = useApp();
+  const { inventories, depots, activeDepotId, setActiveDepotId, openModal, showToast, currentUser, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [depotFilter, setDepotFilter] = useState(activeDepotId);
+  const [preset, setPreset] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   if (isLoading) {
     return (
@@ -31,10 +34,6 @@ export default function InventairePage() {
       </div>
     );
   }
-
-  const [preset, setPreset] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
 
   const filteredInventories = inventories.filter(inv => {
     const matchSearch = inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,12 +94,14 @@ export default function InventairePage() {
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
           </button>
-          <button 
-            onClick={() => openModal("modal-new-inventory")}
-            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Lancer un Inventaire Dépôt
-          </button>
+          {canCreate(currentUser, 'inventaire') && (
+            <button 
+              onClick={() => openModal("modal-new-inventory")}
+              className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Lancer un Inventaire Dépôt
+            </button>
+          )}
         </div>
       </div>
 

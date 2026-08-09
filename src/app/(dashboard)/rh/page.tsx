@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Plus, Search, UserCheck, DollarSign, Edit, Trash2, FileText, PlusCircle, Building2, User, ShieldCheck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function RHPage() {
-  const { employees, depots, activeDepotId, deleteEmployee, openModal, askConfirm, isLoading } = useApp();
+  const { employees, depots, activeDepotId, deleteEmployee, openModal, askConfirm, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -66,12 +66,14 @@ export default function RHPage() {
           <p className="text-sm text-slate-400 mt-1">Gestion des fiches RH (CNI, Contrats CDI/CDD), filtrage par dépôt, avances sur salaire et bulletins de paie.</p>
         </div>
 
-        <button 
-          onClick={() => openModal("modal-add-employee")}
-          className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Nouvel Employé RH
-        </button>
+        {canCreate(currentUser, 'rh') && (
+          <button 
+            onClick={() => openModal("modal-add-employee")}
+            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Nouvel Employé RH
+          </button>
+        )}
       </div>
 
       {/* KPI Cards */}

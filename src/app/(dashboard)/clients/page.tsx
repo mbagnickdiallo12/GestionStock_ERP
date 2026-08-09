@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Plus, Search, Users, DollarSign, AlertCircle, CheckCircle, Edit, Trash2, Eye, Mail, MapPin, Phone, ShieldCheck, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA } from "@/lib/utils";
+import { formatFCFA, canCreate } from "@/lib/utils";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function ClientsPage() {
-  const { clients, deleteClient, openModal, askConfirm, showToast, isLoading } = useApp();
+  const { clients, deleteClient, openModal, askConfirm, showToast, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -94,12 +94,14 @@ export default function ClientsPage() {
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
           </button>
-          <button 
-            onClick={() => openModal("modal-add-client")}
-            className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Nouveau Client
-          </button>
+          {canCreate(currentUser, 'clients') && (
+            <button 
+              onClick={() => openModal("modal-add-client")}
+              className="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Nouveau Client
+            </button>
+          )}
         </div>
       </div>
 
