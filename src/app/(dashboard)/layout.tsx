@@ -1,0 +1,91 @@
+"use client";
+
+import React from "react";
+import { AppProvider } from "@/context/AppContext";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
+import { ToastContainer } from "@/components/ui/ToastContainer";
+
+import { InvoiceModal } from "@/components/modals/InvoiceModal";
+import { DeliveryNoteModal } from "@/components/modals/DeliveryNoteModal";
+import { ReceptionNoteModal } from "@/components/modals/ReceptionNoteModal";
+import { AddStockInModal } from "@/components/modals/AddStockInModal";
+import { AddStockOutModal } from "@/components/modals/AddStockOutModal";
+import { TransferStockModal } from "@/components/modals/TransferStockModal";
+import { AddPurchaseModal } from "@/components/modals/AddPurchaseModal";
+import { AddSupplierModal } from "@/components/modals/AddSupplierModal";
+import { EditSupplierModal } from "@/components/modals/EditSupplierModal";
+import { AddClientModal } from "@/components/modals/AddClientModal";
+import { EditClientModal } from "@/components/modals/EditClientModal";
+import { DebtSettlementModal } from "@/components/modals/DebtSettlementModal";
+import { ClientDetailsModal } from "@/components/modals/ClientDetailsModal";
+import { NewInventoryModal } from "@/components/modals/NewInventoryModal";
+import { InventoryDetailsModal } from "@/components/modals/InventoryDetailsModal";
+import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
+import { CashAuditModal } from "@/components/modals/CashAuditModal";
+import { CashJournalModal } from "@/components/modals/CashJournalModal";
+import { AddDepotModal } from "@/components/modals/AddDepotModal";
+import { EditDepotModal } from "@/components/modals/EditDepotModal";
+import { AddEmployeeModal } from "@/components/modals/AddEmployeeModal";
+import { EditEmployeeModal } from "@/components/modals/EditEmployeeModal";
+import { EmployeeDetailsModal } from "@/components/modals/EmployeeDetailsModal";
+import { AddAdvanceModal } from "@/components/modals/AddAdvanceModal";
+import { PayslipModal } from "@/components/modals/PayslipModal";
+import { AddUserModal } from "@/components/modals/AddUserModal";
+import { EditUserModal } from "@/components/modals/EditUserModal";
+import { ResetPasswordModal } from "@/components/modals/ResetPasswordModal";
+import { UserProfileModal } from "@/components/modals/UserProfileModal";
+import { EditProductModal } from "@/components/modals/EditProductModal";
+import { EditPurchaseModal } from "@/components/modals/EditPurchaseModal";
+import { PrintFinancialReportModal } from "@/components/modals/PrintFinancialReportModal";
+import { ConfirmModal } from "@/components/modals/ConfirmModal";
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AppProvider>
+      <div className="flex min-h-screen relative font-sans">
+        <Sidebar />
+        <main className="flex-1 ml-0 lg:ml-[270px] flex flex-col min-h-screen bg-[#0f172a] text-slate-100 transition-all duration-300">
+          <Header />
+          <div className="p-4 sm:p-7 flex-1 flex flex-col gap-6">
+            {children}
+          </div>
+        </main>
+        <ToastContainer />
+        <InvoiceModal />
+        <DeliveryNoteModal />
+        <ReceptionNoteModal />
+        <AddStockInModal />
+        <AddStockOutModal />
+        <TransferStockModal />
+        <AddPurchaseModal />
+        <AddSupplierModal />
+        <EditSupplierModal />
+        <AddClientModal />
+        <EditClientModal />
+        <DebtSettlementModal />
+        <ClientDetailsModal />
+        <NewInventoryModal />
+        <InventoryDetailsModal />
+        <ManageCategoriesModal />
+        <CashAuditModal />
+        <CashJournalModal />
+        <AddDepotModal />
+        <EditDepotModal />
+        <AddEmployeeModal />
+        <EditEmployeeModal />
+        <EmployeeDetailsModal />
+        <AddAdvanceModal />
+        <PayslipModal />
+        <PrintFinancialReportModal />
+        <AddUserModal />
+        <EditUserModal />
+        <ResetPasswordModal />
+        <UserProfileModal />
+        <EditProductModal />
+        <EditPurchaseModal />
+        <ConfirmModal />
+      </div>
+    </AppProvider>
+  );
+}

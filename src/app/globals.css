@@ -1,0 +1,273 @@
+@import "tailwindcss";
+
+:root {
+  --bg-main: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;
+  --bg-sidebar: #090d16;
+  --bg-header: rgba(15, 23, 42, 0.85);
+  --bg-input: #0f172a;
+  --bg-table-header: rgba(0, 0, 0, 0.25);
+
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color-strong: rgba(255, 255, 255, 0.2);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+
+  --primary-500: #10b981;
+  --primary-600: #059669;
+  --primary-700: #047857;
+  --accent-gold: #f59e0b;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+}
+
+[data-theme="light"] {
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-sidebar: #0f172a;
+  --bg-header: rgba(255, 255, 255, 0.95);
+  --bg-input: #f1f5f9;
+  --bg-table-header: #f1f5f9;
+
+  --border-color: #e2e8f0;
+  --border-color-strong: #cbd5e1;
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-subtle: #64748b;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Global Light Mode Overrides for Hardcoded Tailwind dark classes */
+[data-theme="light"] .bg-\[\#0f172a\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bg-\[\#1e293b\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .bg-\[\#0a1120\] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] header.bg-\[\#0f172a\]\/85 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] main.bg-\[\#0f172a\] {
+  background-color: #f8fafc !important;
+}
+
+/* Text Visibility Fixes in Light Mode */
+[data-theme="light"] .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200 {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .text-slate-300,
+[data-theme="light"] .text-slate-400 {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/15,
+[data-theme="light"] .border-white\/5 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-black\/20,
+[data-theme="light"] .bg-black\/40 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Ensure Dark Buttons & Badges retain crisp White Icons/Text in Light Mode */
+[data-theme="light"] .bg-slate-800,
+[data-theme="light"] .bg-slate-700,
+[data-theme="light"] .bg-emerald-600,
+[data-theme="light"] .bg-blue-600,
+[data-theme="light"] .bg-red-600,
+[data-theme="light"] button.bg-emerald-600,
+[data-theme="light"] button.bg-blue-600,
+[data-theme="light"] button.bg-red-600,
+[data-theme="light"] button.bg-slate-800,
+[data-theme="light"] button.bg-slate-700 {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-slate-800 *,
+[data-theme="light"] .bg-slate-700 *,
+[data-theme="light"] .bg-emerald-600 *,
+[data-theme="light"] .bg-blue-600 *,
+[data-theme="light"] .bg-red-600 * {
+  color: #ffffff !important;
+}
+
+/* Modal Overrides in Light Mode */
+[data-theme="light"] .bg-slate-950\/80 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Sidebar specific in light mode (keep sleek dark sidebar background for contrast) */
+[data-theme="light"] aside.bg-\[\#090d16\] {
+  background-color: #0f172a !important;
+}
+
+[data-theme="light"] aside .text-white {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] aside .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Popover & Floating Card fixes in Light Mode */
+[data-theme="light"] .bg-\[\#090d16\]\/95,
+[data-theme="light"] .bg-\[\#090d16\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* ==============================================================================
+   🖨️ RIZSTOCK ERP — PERFECT A4 FORMAT PRINT & PDF ENGINE
+   ============================================================================== */
+@page {
+  size: A4 portrait;
+  margin: 8mm 10mm 8mm 10mm;
+}
+
+@media print {
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header, sidebar, nav, aside, button, .no-print,
+  .toast-container, [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Unconstrain all parent elements so printable-document fills full A4 width */
+  html, body, main, div, [role="dialog"],
+  .fixed, .backdrop-blur-sm, .printable-document, .printable-document * {
+    visibility: visible !important;
+  }
+
+  html, body, main, div, [role="dialog"],
+  .fixed, .backdrop-blur-sm {
+    position: static !important;
+    display: block !important;
+    float: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    transform: none !important;
+    flex: none !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Printable Document positioned ABSOLUTELY at top 0 left 0 of full A4 page */
+  .printable-document {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    border: none !important;
+    z-index: 99999999 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Preserve flex and grid layouts inside .printable-document */
+  .printable-document .flex {
+    display: flex !important;
+  }
+  .printable-document .grid {
+    display: grid !important;
+  }
+  .printable-document .hidden {
+    display: none !important;
+  }
+  .printable-document * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
