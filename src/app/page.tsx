@@ -11,8 +11,8 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const { loginUser, refreshFromSupabase } = useApp();
-  const [username, setUsername] = useState("moustapha.n");
-  const [password, setPassword] = useState("password");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [depot, setDepot] = useState("all");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -95,41 +95,6 @@ export default function LoginPage() {
             <div className="flex-1 font-medium">{errorMsg}</div>
           </div>
         )}
-
-        {/* Quick Demo Accounts Selection Chips */}
-        <div className="mt-4 mb-2">
-          <span className="text-[11px] text-slate-400 font-semibold block mb-2">⚡ Comptes de démonstration prédéfinis :</span>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => { setUsername("moustapha.n"); setPassword("password"); setErrorMsg(""); }}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${username === 'moustapha.n' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'}`}
-            >
-              👑 Admin (moustapha.n)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setUsername("ousmane.b"); setPassword("password"); setErrorMsg(""); }}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${username === 'ousmane.b' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'}`}
-            >
-              🏢 Gérant (ousmane.b)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setUsername("awa.d"); setPassword("password"); setErrorMsg(""); }}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${username === 'awa.d' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'}`}
-            >
-              🛒 Caissier (awa.d)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setUsername("fatou.s"); setPassword("password"); setErrorMsg(""); }}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${username === 'fatou.s' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-900/60 border-white/10 text-slate-400 hover:text-white'}`}
-            >
-              📊 Comptable (fatou.s)
-            </button>
-          </div>
-        </div>
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4 my-4">

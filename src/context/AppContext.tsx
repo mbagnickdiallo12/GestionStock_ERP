@@ -162,14 +162,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try { return JSON.parse(saved); } catch (e) {}
       }
     }
-    return {
-      username: "moustapha.n",
-      name: "Moustapha Ndiaye",
-      role: "admin",
-      depot: "Tous",
-      lastLogin: "Aujourd'hui",
-      status: "Actif"
-    };
+    return null;
   });
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -1652,42 +1645,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: "Veuillez saisir votre nom d'utilisateur ou adresse email." };
     }
 
-    // Match against loaded user_accounts
-    let target = users.find(u => 
-      u.username.toLowerCase() === trimmedUser || 
-      u.name.toLowerCase().includes(trimmedUser)
-    );
+    if (!trimmedPass) {
+      return { success: false, message: "Veuillez saisir votre mot de passe d'accès." };
+    }
 
-    // Fallback for default demo accounts
-    if (!target) {
-      if (trimmedUser === "admin" || trimmedUser === "moustapha.n" || trimmedUser.includes("moustapha")) {
-        target = { username: "moustapha.n", name: "Moustapha Ndiaye", role: "admin", depot: "Tous", lastLogin: "Aujourd'hui", status: "Actif" };
-      } else if (trimmedUser === "ousmane.b" || trimmedUser.includes("ousmane")) {
-        target = { username: "ousmane.b", name: "Ousmane Ba", role: "gerant", depot: "dep-1", lastLogin: "Aujourd'hui", status: "Actif" };
-      } else if (trimmedUser === "awa.d" || trimmedUser.includes("awa")) {
-        target = { username: "awa.d", name: "Awa Diop", role: "caissier", depot: "dep-1", lastLogin: "Aujourd'hui", status: "Actif" };
-      } else if (trimmedUser === "fatou.s" || trimmedUser.includes("fatou")) {
-        target = { username: "fatou.s", name: "Fatou Sall", role: "comptable", depot: "Tous", lastLogin: "Aujourd'hui", status: "Actif" };
-      } else if (trimmedUser === "demba.n" || trimmedUser.includes("demba")) {
-        target = { username: "demba.n", name: "Demba Ndao", role: "personnalise", depot: "Tous", lastLogin: "Aujourd'hui", status: "Actif" };
+    // 1. Direct Supabase Query on user_accounts table
+    const { data: dbUser } = await supabase
+      .from('user_accounts')
+      .select('*')
+      .or(`username.eq.${trimmedUser},name.ilike.%${trimmedUser}%`)
+      .maybeSingle();
+
+    let target: UserAccount | null = null;
+
+    if (dbUser) {
+      target = {
+        username: dbUser.username,
+        name: dbUser.name,
+        role: dbUser.role,
+        depot: dbUser.depot || 'Tous',
+        lastLogin: dbUser.last_login ? dbUser.last_login.slice(0, 16).replace("T", " ") : 'À l\'instant',
+        status: dbUser.status || 'Actif',
+        password: dbUser.password
+      };
+    } else {
+      // 2. Search in loaded users array
+      const matched = users.find(u => u.username.toLowerCase() === trimmedUser || u.name.toLowerCase() === trimmedUser);
+      if (matched) {
+        target = matched;
       }
     }
 
+    // STRICT DENIAL: If user does not exist in DB or users list, deny access immediately
     if (!target) {
       return {
         success: false,
-        message: `Identifiant "${usernameInput}" non reconnu. Comptes valides : moustapha.n, admin, ousmane.b, awa.d, fatou.s (Mot de passe : password)`
+        message: `Accès refusé : Aucun compte utilisateur enregistré sous l'identifiant "${usernameInput}". Seuls les comptes créés par l'Administrateur ont accès.`
       };
     }
 
     if (target.status === "Suspendu") {
       return {
         success: false,
-        message: `Le compte "${target.username}" est actuellement suspendu. Veuillez contacter un Administrateur ERP.`
+        message: `Accès refusé : Le compte "${target.username}" est actuellement suspendu. Veuillez contacter l'Administrateur ERP.`
       };
     }
 
-    if (target.password && target.password !== trimmedPass && trimmedPass !== "password" && trimmedPass !== "admin123" && trimmedPass !== "admin") {
+    // Verify Password if set on account
+    if (target.password && target.password !== trimmedPass) {
       return {
         success: false,
         message: "Mot de passe incorrect pour cet utilisateur."
