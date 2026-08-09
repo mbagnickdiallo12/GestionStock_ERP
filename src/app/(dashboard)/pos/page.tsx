@@ -9,7 +9,7 @@ import { formatNumber, formatFCFA } from "@/lib/utils";
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function POSPage() {
-  const { products, categories, stocks, activeDepotId, depots, cart, addToCart, updateCartQty, clearCart, processCheckout, clients, cashSessions, openModal, isLoading } = useApp();
+  const { products, categories, stocks, activeDepotId, depots, cart, addToCart, updateCartQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -34,6 +34,15 @@ export default function POSPage() {
 
   const openSession = cashSessions.find(s => s.status === "Ouverte");
 
+  const handleCheckout = () => {
+    if (!openSession) {
+      showToast("Attention : La caisse est actuellement clôturée. Veuillez d'abord ouvrir la caisse enregistreuse.", "warning");
+      openModal("modal-cash-audit");
+      return;
+    }
+    processCheckout(selectedClient, paymentMode);
+  };
+
   const filteredProducts = products.filter(p => {
     const matchName = p.title.toLowerCase().includes(searchTerm.toLowerCase()) || p.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCat = catFilter === "all" || p.category === catFilter;
@@ -53,15 +62,19 @@ export default function POSPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Shift Status Indicator */}
-          <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 text-xs font-bold ${
-            openSession
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}>
-            {openSession ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            <span>{openSession ? `Caisse Ouverte (Fond: ${formatNumber(openSession.openingBalance)} F)` : "Caisse Clôturée"}</span>
-          </div>
+          {/* Interactive Shift Status Indicator */}
+          <button
+            onClick={() => openModal("modal-cash-audit")}
+            className={`px-3.5 py-2 rounded-xl border flex items-center gap-2 text-xs font-extrabold transition-all cursor-pointer hover:scale-[1.02] shadow-md ${
+              openSession
+                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25"
+                : "bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30 animate-pulse"
+            }`}
+            title={openSession ? "Caisse Ouverte - Cliquez pour consulter ou clôturer" : "Caisse Clôturée - Cliquez pour Ouvrir la Caisse"}
+          >
+            {openSession ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4 text-rose-400" />}
+            <span>{openSession ? `Caisse Ouverte (Fond: ${formatNumber(openSession.openingBalance)} F)` : "🔒 Caisse Clôturée — Ouvrir Caisse"}</span>
+          </button>
 
           <button
             onClick={() => openModal("modal-cash-journal")}
@@ -271,7 +284,7 @@ export default function POSPage() {
             </div>
 
             <button
-              onClick={() => processCheckout(selectedClient, paymentMode)}
+              onClick={handleCheckout}
               className="w-full bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-extrabold text-sm py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40 transition-all hover:-translate-y-0.5 mt-2 cursor-pointer"
             >
               <CheckCircle2 className="w-5 h-5" /> Valider & Imprimer Facture

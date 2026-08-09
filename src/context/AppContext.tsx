@@ -143,7 +143,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [stocks, setStocks] = useState<StockMatrix>(INITIAL_STOCKS);
   const [sales, setSales] = useState<Sale[]>(INITIAL_SALES);
-  const [cashSessions, setCashSessions] = useState<CashSession[]>(INITIAL_CASH_SESSIONS);
+  const [cashSessions, setCashSessions] = useState<CashSession[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_CashSessions");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_CASH_SESSIONS;
+  });
   const [movements, setMovements] = useState<StockMovement[]>(INITIAL_MOVEMENTS);
   const [purchases, setPurchases] = useState<Purchase[]>(INITIAL_PURCHASES);
   const [suppliers, setSuppliers] = useState<Supplier[]>(INITIAL_SUPPLIERS);
@@ -460,6 +471,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })));
       }
 
+      if (dbCash) {
+        const loadedCash = dbCash.map(s => ({
+          id: s.id,
+          date: s.date ? s.date.slice(0, 16).replace("T", " ") : new Date().toISOString().slice(0, 16).replace("T", " "),
+          depotId: s.depot_id || 'dep-1',
+          depotName: s.depot_name || 'Siège Dépôt',
+          cashierName: s.cashier_name || 'Caissier',
+          openingBalance: Number(s.opening_balance || 0),
+          cashSales: Number(s.cash_sales || 0),
+          waveSales: Number(s.wave_sales || 0),
+          chequeSales: Number(s.cheque_sales || 0),
+          virementSales: Number(s.virement_sales || 0),
+          creditSales: Number(s.credit_sales || 0),
+          totalExpenses: Number(s.total_expenses || 0),
+          expectedCash: Number(s.expected_cash || s.opening_balance || 0),
+          actualCash: Number(s.actual_cash || s.opening_balance || 0),
+          cashDiscrepancy: Number(s.cash_discrepancy || 0),
+          status: (s.status || 'Ouverte') as 'Ouverte' | 'Clôturée'
+        }));
+        setCashSessions(prev => {
+          const next = loadedCash.length > 0 ? loadedCash : prev;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("RizStock_CashSessions", JSON.stringify(next));
+          }
+          return next;
+        });
+      }
+
       if (dbUsers) {
         const loadedUsers = dbUsers.map(u => ({
           username: u.username,
@@ -767,6 +806,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       refreshFromSupabase();
     }
 
+    // Live update active open cash session totals
+    setCashSessions(prev => {
+      const openIdx = prev.findIndex(s => s.status === "Ouverte");
+      if (openIdx === -1) return prev;
+      const copy = [...prev];
+      const sess = { ...copy[openIdx] };
+      if (paymentMode === "Espece") {
+        sess.cashSales += totalAmt;
+        sess.expectedCash += totalAmt;
+      } else if (paymentMode === "Wave") {
+        sess.waveSales += totalAmt;
+      } else if (paymentMode === "Cheque") {
+        sess.chequeSales += totalAmt;
+      } else if (paymentMode === "Virement") {
+        sess.virementSales += totalAmt;
+      } else if (paymentMode === "Credit") {
+        sess.creditSales += totalAmt;
+      }
+      copy[openIdx] = sess;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_CashSessions", JSON.stringify(copy));
+      }
+      supabase.from('cash_sessions').update({
+        cash_sales: sess.cashSales,
+        wave_sales: sess.waveSales,
+        cheque_sales: sess.chequeSales,
+        virement_sales: sess.virementSales,
+        credit_sales: sess.creditSales,
+        expected_cash: sess.expectedCash
+      }).eq('id', sess.id).then();
+      return copy;
+    });
+
     logActivity("VENTE", `Validation Vente ${invoiceNum} (${clientName || "Client Comptoir"}) - ${formatNumber(totalBagsCount)} sacs pour ${formatFCFA(totalAmt)}`, targetDepot?.name);
     clearCart();
     openModal(`invoice-${invoiceNum}`);
@@ -782,7 +854,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       date,
       depotId: depotObj.id,
       depotName: depotObj.name,
-      cashierName: activeUserObj ? activeUserObj.name : "Awa Diop",
+      cashierName: currentUser ? currentUser.name : (activeUserObj ? activeUserObj.name : "Caissier POS"),
       openingBalance,
       cashSales: 0,
       waveSales: 0,
@@ -796,21 +868,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: "Ouverte"
     };
 
-    setCashSessions(prev => [newSession, ...prev]);
-
-    const { error } = await supabase.from('cash_sessions').insert({
-      id: newSession.id,
-      depot_id: newSession.depotId,
-      depot_name: newSession.depotName,
-      cashier_name: newSession.cashierName,
-      opening_balance: newSession.openingBalance,
-      expected_cash: newSession.expectedCash,
-      actual_cash: newSession.actualCash,
-      status: newSession.status
+    setCashSessions(prev => {
+      const updated = prev.map(s => s.status === "Ouverte" ? { ...s, status: "Clôturée" as const } : s);
+      const next = [newSession, ...updated];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_CashSessions", JSON.stringify(next));
+      }
+      return next;
     });
 
-    if (error) console.error(error);
-    else refreshFromSupabase();
+    try {
+      await supabase.from('cash_sessions').insert({
+        id: newSession.id,
+        depot_id: newSession.depotId,
+        depot_name: newSession.depotName,
+        cashier_name: newSession.cashierName,
+        opening_balance: newSession.openingBalance,
+        cash_sales: 0,
+        wave_sales: 0,
+        cheque_sales: 0,
+        virement_sales: 0,
+        credit_sales: 0,
+        total_expenses: 0,
+        expected_cash: newSession.expectedCash,
+        actual_cash: newSession.actualCash,
+        status: newSession.status
+      });
+    } catch (e) {
+      console.warn("Supabase open cash session error:", e);
+    }
 
     logActivity("VENTE", `Ouverture de caisse N° ${id} avec un fond initial de ${formatFCFA(openingBalance)}`, depotObj.name);
     showToast(`Caisse ouverte avec ${formatFCFA(openingBalance)} de fond de caisse !`, "success");
@@ -823,21 +909,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const discrepancy = actualCash - openSession.expectedCash;
 
-    setCashSessions(prev => prev.map(s => s.id === openSession.id ? {
-      ...s,
-      actualCash,
-      cashDiscrepancy: discrepancy,
-      status: "Clôturée"
-    } : s));
+    setCashSessions(prev => {
+      const next = prev.map(s => s.id === openSession.id ? {
+        ...s,
+        actualCash,
+        cashDiscrepancy: discrepancy,
+        status: "Clôturée" as const
+      } : s);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_CashSessions", JSON.stringify(next));
+      }
+      return next;
+    });
 
-    const { error } = await supabase.from('cash_sessions').update({
-      actual_cash: actualCash,
-      cash_discrepancy: discrepancy,
-      status: 'Clôturée'
-    }).eq('id', openSession.id);
-
-    if (error) console.error(error);
-    else refreshFromSupabase();
+    try {
+      await supabase.from('cash_sessions').update({
+        actual_cash: actualCash,
+        cash_discrepancy: discrepancy,
+        status: 'Clôturée'
+      }).eq('id', openSession.id);
+    } catch (e) {
+      console.warn("Supabase close cash session error:", e);
+    }
 
     logActivity("VENTE", `Clôture de Caisse ${openSession.id}. Espèces théoriques: ${formatFCFA(openSession.expectedCash)}, Compté: ${formatFCFA(actualCash)} (Écart: ${discrepancy > 0 ? '+' : ''}${formatFCFA(discrepancy)})`, openSession.depotName);
     showToast(`Session de caisse clôturée avec succès !`, "success");

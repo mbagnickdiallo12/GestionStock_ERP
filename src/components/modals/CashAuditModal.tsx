@@ -81,24 +81,24 @@ export const CashAuditModal: React.FC = () => {
         {/* Session Status Banner */}
         <div className="bg-[#0f172a] border border-white/10 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${openSession?.status === "Ouverte" ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-800 text-slate-400"}`}>
+            <div className={`p-2.5 rounded-xl ${openSession?.status === "Ouverte" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
               {openSession?.status === "Ouverte" ? <Unlock className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
             </div>
             <div>
-              <span className="text-xs text-slate-400 font-mono">Session N° {openSession?.id || "CS-NEW"}</span>
+              <span className="text-xs text-slate-400 font-mono">Session N° {openSession?.id || "CS-NOUVELLE"}</span>
               <h3 className="font-extrabold text-base text-white">
-                Caisse Dépôt : {openSession?.depotName || "Dakar Port"}
+                Caisse Dépôt : {openSession?.depotName || "Dépôt Actif"}
               </h3>
-              <p className="text-xs text-slate-300">Caissier Responsable : <strong>{openSession?.cashierName || "Awa Diop"}</strong></p>
+              <p className="text-xs text-slate-300">Caissier Responsable : <strong>{openSession?.cashierName || settings?.companyName || "Caissier POS"}</strong></p>
             </div>
           </div>
 
           <span className={`px-3 py-1 rounded-full text-xs font-extrabold border ${
             openSession?.status === "Ouverte"
               ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-              : "bg-slate-800 border-white/10 text-slate-300"
+              : "bg-red-500/15 border-red-500/40 text-red-400"
           }`}>
-            ● Session {openSession?.status || "Ouverte"}
+            ● Session {openSession?.status || "Clôturée"}
           </span>
         </div>
 
@@ -234,23 +234,28 @@ export const CashAuditModal: React.FC = () => {
           </div>
         </div>
 
-        {/* If session is closed, offer opening form */}
-        {openSession?.status === "Clôturée" && (
-          <form onSubmit={handleOpenShift} className="bg-[#0f172a] border border-emerald-500/30 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
+        {/* If session is not open, offer opening form */}
+        {(!openSession || openSession.status === "Clôturée") && (
+          <form onSubmit={handleOpenShift} className="bg-[#0f172a] border border-emerald-500/40 p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
             <div>
-              <h4 className="font-extrabold text-sm text-white">Démarrer une Nouvelle Session de Caisse</h4>
-              <p className="text-xs text-slate-400">Saisissez le fond de caisse attribué pour la journée.</p>
+              <h4 className="font-extrabold text-base text-emerald-400 flex items-center gap-2">
+                <Unlock className="w-5 h-5 text-emerald-400" /> Démarrer une Nouvelle Session de Caisse
+              </h4>
+              <p className="text-xs text-slate-300 mt-1">Saisissez le fond de caisse initial attribué au caissier pour la journée.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={newOpeningBalance}
-                onChange={(e) => setNewOpeningBalance(parseInt(e.target.value) || 0)}
-                className="bg-[#1e293b] border border-white/15 px-3 py-2 rounded-xl text-white text-xs font-mono font-bold w-32 outline-none"
-              />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-[#1e293b] border border-white/15 px-3 py-2 rounded-xl">
+                <span className="text-xs font-bold text-slate-400">FCFA</span>
+                <input
+                  type="number"
+                  value={newOpeningBalance}
+                  onChange={(e) => setNewOpeningBalance(parseInt(e.target.value) || 0)}
+                  className="bg-transparent text-white text-sm font-mono font-bold w-28 outline-none"
+                />
+              </div>
               <button
                 type="submit"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30"
+                className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-950/50"
               >
                 <Unlock className="w-4 h-4" /> Ouvrir la Caisse
               </button>
