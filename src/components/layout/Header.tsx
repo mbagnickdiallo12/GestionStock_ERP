@@ -6,7 +6,7 @@ import { Building2, ShieldCheck, Sun, Moon, ShoppingCart, Menu, User, LogOut } f
 import { useApp } from "@/context/AppContext";
 
 export const Header: React.FC = () => {
-  const { activeDepotId, setActiveDepotId, activeRole, setActiveRole, depots, setMobileMenuOpen, theme, toggleTheme, clearCart, showToast, openModal, logoutUser } = useApp();
+  const { currentUser, activeDepotId, setActiveDepotId, activeRole, setActiveRole, depots, setMobileMenuOpen, theme, toggleTheme, clearCart, showToast, openModal, logoutUser } = useApp();
 
   const handleNewSale = () => {
     clearCart();
@@ -46,17 +46,24 @@ export const Header: React.FC = () => {
         <div className="hidden md:flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-semibold text-amber-400">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Rôle:</span>
-          <select
-            value={activeRole}
-            onChange={(e) => setActiveRole(e.target.value)}
-            className="bg-transparent text-amber-400 font-bold outline-none cursor-pointer uppercase text-xs"
-          >
-            <option value="admin" className="bg-[#1e293b]">Administrateur</option>
-            <option value="personnalise" className="bg-[#1e293b]">⭐ Rôle Personnalisé</option>
-            <option value="gerant" className="bg-[#1e293b]">Gérant de Dépôt</option>
-            <option value="caissier" className="bg-[#1e293b]">Caissier / POS</option>
-            <option value="comptable" className="bg-[#1e293b]">Comptable</option>
-          </select>
+          {currentUser?.role === 'admin' ? (
+            <select
+              value={activeRole}
+              onChange={(e) => setActiveRole(e.target.value)}
+              className="bg-transparent text-amber-400 font-bold outline-none cursor-pointer uppercase text-xs"
+              title="Simuler un rôle (Administrateur)"
+            >
+              <option value="admin" className="bg-[#1e293b]">Administrateur</option>
+              <option value="personnalise" className="bg-[#1e293b]">⭐ Rôle Personnalisé</option>
+              <option value="gerant" className="bg-[#1e293b]">Gérant de Dépôt</option>
+              <option value="caissier" className="bg-[#1e293b]">Caissier / POS</option>
+              <option value="comptable" className="bg-[#1e293b]">Comptable</option>
+            </select>
+          ) : (
+            <span className="font-extrabold uppercase text-xs text-emerald-400">
+              {currentUser?.role === 'personnalise' ? '⭐ SUR-MESURE' : currentUser?.role || 'UTILISATEUR'}
+            </span>
+          )}
         </div>
 
         {/* User Profile Button */}

@@ -9,13 +9,14 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, X, Key, Activity, ClipboardList, LogOut
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { hasPermission } from "@/lib/utils";
 
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { activeRole, mobileMenuOpen, setMobileMenuOpen, openModal, users, products, stocks, logoutUser } = useApp();
+  const { currentUser, mobileMenuOpen, setMobileMenuOpen, openModal, products, stocks, logoutUser } = useApp();
 
-  const currentUser = users.find(u => u.role.toLowerCase() === activeRole.toLowerCase()) || users[0];
+  const user = currentUser || { username: 'admin', name: 'Administrateur', role: 'admin' as const, depot: 'Tous', lastLogin: '', status: 'Actif' as const };
 
   // Dynamic low-stock alerts count
   const alertCount = products.filter(p => {
@@ -150,8 +151,15 @@ export const Sidebar: React.FC = () => {
         {/* Collapsible Accordion Navigation List */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-3">
           {navGroups.map((group) => {
+            const visibleItems = group.items.filter(item => {
+              const moduleKey = item.href.replace('/', '');
+              return hasPermission(user, moduleKey);
+            });
+
+            if (visibleItems.length === 0) return null;
+
             const isOpen = openGroups[group.id];
-            const hasActiveChild = group.items.some(it => it.href === pathname);
+            const hasActiveChild = visibleItems.some(it => it.href === pathname);
             const GroupHeaderIcon = group.icon;
 
             return (
@@ -179,7 +187,7 @@ export const Sidebar: React.FC = () => {
                 {/* Sub-Items List */}
                 {((isOpen && (!collapsed || mobileMenuOpen)) || (collapsed && !mobileMenuOpen)) && (
                   <div className={`space-y-1 ${!collapsed || mobileMenuOpen ? "pl-2 border-l border-white/10 ml-2" : ""}`}>
-                    {group.items.map((item, idx) => {
+                    {visibleItems.map((item, idx) => {
                       const Icon = item.icon;
                       const isActive = pathname === item.href;
 
@@ -221,11 +229,11 @@ export const Sidebar: React.FC = () => {
             title="Cliquez pour ouvrir votre profil et modifier votre mot de passe"
           >
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shrink-0 uppercase shadow-md">
-              {currentUser.name.charAt(0)}
+              {user.name.charAt(0)}
             </div>
             {(!collapsed || mobileMenuOpen) && (
               <div className="flex flex-col overflow-hidden flex-1">
-                <span className="font-semibold text-xs text-white truncate group-hover:text-emerald-400 transition-colors">{currentUser.name}</span>
+                <span className="font-semibold text-xs text-white truncate group-hover:text-emerald-400 transition-colors">{user.name}</span>
                 <span className="text-[10px] text-slate-400 flex items-center gap-1">
                   <Key className="w-3 h-3 text-amber-400" /> Mot de passe
                 </span>

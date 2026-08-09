@@ -41,17 +41,33 @@ import { PrintFinancialReportModal } from "@/components/modals/PrintFinancialRep
 import { ConfirmModal } from "@/components/modals/ConfirmModal";
 
 import { useApp } from "@/context/AppContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { hasPermission } from "@/lib/utils";
 
 function ProtectedDashboardContent({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading } = useApp();
+  const { currentUser, isLoading, showToast } = useApp();
   const router = useRouter();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!isLoading && !currentUser) {
       router.push("/");
+      return;
     }
-  }, [currentUser, isLoading, router]);
+
+    if (!isLoading && currentUser) {
+      const moduleKey = pathname.replace('/', '').split('/')[0];
+      if (moduleKey && moduleKey !== 'dashboard' && !hasPermission(currentUser, moduleKey)) {
+        let redirectTarget = '/pos';
+        if (hasPermission(currentUser, 'dashboard')) redirectTarget = '/dashboard';
+        else if (hasPermission(currentUser, 'pos')) redirectTarget = '/pos';
+        else if (hasPermission(currentUser, 'ventes')) redirectTarget = '/ventes';
+
+        showToast(`Accès restreint : Le rôle "${currentUser.role.toUpperCase()}" n'a pas l'autorisation d'accéder au module "${moduleKey}".`, "error");
+        router.push(redirectTarget);
+      }
+    }
+  }, [currentUser, isLoading, pathname, router]);
 
   if (isLoading || !currentUser) {
     return (
