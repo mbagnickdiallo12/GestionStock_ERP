@@ -530,19 +530,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           customPermissions: u.custom_permissions ? (typeof u.custom_permissions === 'string' ? JSON.parse(u.custom_permissions) : u.custom_permissions) : u.customPermissions
         }));
         setUsers(prev => {
-          const merged = loadedUsers.map(lu => {
-            const existing = prev.find(p => p.username.toLowerCase() === lu.username.toLowerCase());
-            return {
-              ...lu,
-              password: lu.password || existing?.password,
-              customPermissions: lu.customPermissions || existing?.customPermissions
-            };
+          const userMap = new Map<string, UserAccount>();
+
+          // Preserve all existing local users first
+          prev.forEach(u => {
+            if (u && u.username) {
+              userMap.set(u.username.toLowerCase(), u);
+            }
           });
-          const next = merged.length > 0 ? merged : INITIAL_USERS;
+
+          // Merge or update with loaded users from Supabase
+          loadedUsers.forEach(lu => {
+            if (lu && lu.username) {
+              const existing = userMap.get(lu.username.toLowerCase());
+              userMap.set(lu.username.toLowerCase(), {
+                ...existing,
+                ...lu,
+                password: lu.password || existing?.password,
+                customPermissions: lu.customPermissions || existing?.customPermissions
+              });
+            }
+          });
+
+          const next = Array.from(userMap.values());
+          const finalUsers = next.length > 0 ? next : INITIAL_USERS;
           if (typeof window !== "undefined") {
-            localStorage.setItem("RizStock_Users", JSON.stringify(next));
+            localStorage.setItem("RizStock_Users", JSON.stringify(finalUsers));
           }
-          return next;
+          return finalUsers;
         });
       }
 
@@ -1991,7 +2006,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setUsers(prev => {
       const filtered = prev.filter(u => u.username.toLowerCase() !== newUsr.username.toLowerCase());
-      const next = [...filtered, newUsr];
+      const next = [newUsr, ...filtered];
       if (typeof window !== "undefined") {
         localStorage.setItem("RizStock_Users", JSON.stringify(next));
       }
@@ -1999,21 +2014,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     try {
-      const { error } = await supabase.from('user_accounts').insert({
+      const { error } = await supabase.from('user_accounts').upsert({
         username: newUsr.username,
         name: newUsr.name,
         role: newUsr.role,
         depot: newUsr.depot,
         status: newUsr.status,
         password: newUsr.password,
-        custom_permissions: newUsr.customPermissions ? JSON.stringify(newUsr.customPermissions) : null
-      });
+        custom_permissions: newUsr.customPermissions ? (typeof newUsr.customPermissions === 'string' ? newUsr.customPermissions : JSON.stringify(newUsr.customPermissions)) : null
+      }, { onConflict: 'username' });
 
       if (error) {
-        console.warn("Supabase insert warning:", error);
-        showToast(`Compte d'accès "${usrData.username}" sauvegardé localement !`, "success");
+        console.warn("Supabase upsert warning:", error);
+        showToast(`Compte d'accès "${usrData.username}" (${usrData.role.toUpperCase()}) sauvegardé localement !`, "success");
       } else {
-        showToast(`Compte d'accès "${usrData.username}" créé avec succès !`, "success");
+        showToast(`Compte d'accès "${usrData.username}" (${usrData.role.toUpperCase()}) créé avec succès !`, "success");
         await refreshFromSupabase();
       }
     } catch (err) {
