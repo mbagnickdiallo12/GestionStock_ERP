@@ -152,7 +152,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [inventories, setInventories] = useState<InventorySession[]>(INITIAL_INVENTORIES);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
-  const [users, setUsers] = useState<UserAccount[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<UserAccount[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Users");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_USERS;
+  });
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
 
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
@@ -456,9 +467,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           role: u.role,
           depot: u.depot || 'Tous',
           lastLogin: u.last_login ? u.last_login.slice(0, 16).replace("T", " ") : 'Récemment',
-          status: u.status || 'Actif'
+          status: u.status || 'Actif',
+          password: u.password,
+          customPermissions: u.custom_permissions ? (typeof u.custom_permissions === 'string' ? JSON.parse(u.custom_permissions) : u.custom_permissions) : u.customPermissions
         }));
-        setUsers(loadedUsers.length > 0 ? loadedUsers : INITIAL_USERS);
+        setUsers(prev => {
+          const merged = loadedUsers.map(lu => {
+            const existing = prev.find(p => p.username.toLowerCase() === lu.username.toLowerCase());
+            return {
+              ...lu,
+              password: lu.password || existing?.password,
+              customPermissions: lu.customPermissions || existing?.customPermissions
+            };
+          });
+          const next = merged.length > 0 ? merged : INITIAL_USERS;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("RizStock_Users", JSON.stringify(next));
+          }
+          return next;
+        });
       }
 
       if (dbLogs) {
@@ -1592,23 +1619,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addUser = async (usrData: Omit<UserAccount, 'lastLogin'>) => {
-    const newUsr: UserAccount = { ...usrData, lastLogin: "Jamais" };
-    setUsers(prev => [...prev, newUsr]);
+    const newUsr: UserAccount = {
+      ...usrData,
+      username: usrData.username.trim(),
+      lastLogin: "Jamais"
+    };
 
-    const { error } = await supabase.from('user_accounts').insert({
-      username: newUsr.username,
-      name: newUsr.name,
-      role: newUsr.role,
-      depot: newUsr.depot,
-      status: newUsr.status
+    setUsers(prev => {
+      const filtered = prev.filter(u => u.username.toLowerCase() !== newUsr.username.toLowerCase());
+      const next = [...filtered, newUsr];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Users", JSON.stringify(next));
+      }
+      return next;
     });
 
-    if (error) {
-      console.error("Supabase User error:", error);
-      showToast(`Erreur Supabase Utilisateur: ${error.message}`, "error");
-    } else {
-      showToast(`Compte d'accès "${usrData.username}" créé dans Supabase !`, "success");
-      refreshFromSupabase();
+    try {
+      const { error } = await supabase.from('user_accounts').insert({
+        username: newUsr.username,
+        name: newUsr.name,
+        role: newUsr.role,
+        depot: newUsr.depot,
+        status: newUsr.status,
+        password: newUsr.password,
+        custom_permissions: newUsr.customPermissions ? JSON.stringify(newUsr.customPermissions) : null
+      });
+
+      if (error) {
+        console.warn("Supabase insert warning:", error);
+        showToast(`Compte d'accès "${usrData.username}" sauvegardé localement !`, "success");
+      } else {
+        showToast(`Compte d'accès "${usrData.username}" créé avec succès !`, "success");
+        await refreshFromSupabase();
+      }
+    } catch (err) {
+      console.warn("Supabase user insert exception:", err);
+      showToast(`Compte d'accès "${usrData.username}" créé localement !`, "success");
     }
 
     logActivity("UTILISATEUR", `Création du nouveau compte d'accès ERP "${usrData.username}" (Rôle: ${usrData.role})`);
@@ -1616,17 +1662,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUser = async (username: string, updatedData: Partial<UserAccount>) => {
-    setUsers(prev => prev.map(u => u.username === username ? { ...u, ...updatedData } : u));
-    await supabase.from('user_accounts').update(updatedData).eq('username', username);
+    setUsers(prev => {
+      const next = prev.map(u => u.username.toLowerCase() === username.toLowerCase() ? { ...u, ...updatedData } : u);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Users", JSON.stringify(next));
+      }
+      return next;
+    });
+
+    try {
+      const dbPayload: any = { ...updatedData };
+      if (updatedData.customPermissions) {
+        dbPayload.custom_permissions = JSON.stringify(updatedData.customPermissions);
+        delete dbPayload.customPermissions;
+      }
+      await supabase.from('user_accounts').update(dbPayload).eq('username', username);
+    } catch (e) {
+      console.warn("Supabase user update exception:", e);
+    }
+
     logActivity("UTILISATEUR", `Modification du compte utilisateur / mot de passe de "${username}"`);
     showToast(`Accès utilisateur de "${username}" mis à jour !`, "success");
-    refreshFromSupabase();
+    await refreshFromSupabase();
     closeModal();
   };
 
   const deleteUser = async (username: string) => {
-    setUsers(prev => prev.filter(u => u.username !== username));
-    await supabase.from('user_accounts').delete().eq('username', username);
+    setUsers(prev => {
+      const next = prev.filter(u => u.username.toLowerCase() !== username.toLowerCase());
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Users", JSON.stringify(next));
+      }
+      return next;
+    });
+    try {
+      await supabase.from('user_accounts').delete().eq('username', username);
+    } catch (e) {}
     logActivity("UTILISATEUR", `Révocation définitive du compte utilisateur "${username}"`);
     showToast(`Compte utilisateur "${username}" supprimé !`, "warning");
   };
@@ -1649,12 +1720,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: "Veuillez saisir votre mot de passe d'accès." };
     }
 
-    // 1. Direct Supabase Query on user_accounts table
-    const { data: dbUser } = await supabase
-      .from('user_accounts')
-      .select('*')
-      .or(`username.eq.${trimmedUser},name.ilike.%${trimmedUser}%`)
-      .maybeSingle();
+    // 1. Local memory & localStorage match
+    let localSavedUsers: UserAccount[] = users;
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Users");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            localSavedUsers = parsed;
+          }
+        } catch (e) {}
+      }
+    }
+
+    const localMatch = localSavedUsers.find(u =>
+      u.username.toLowerCase() === trimmedUser ||
+      u.name.toLowerCase() === trimmedUser
+    );
+
+    // 2. Direct Supabase Query on user_accounts table
+    let dbUser: any = null;
+    try {
+      const { data } = await supabase
+        .from('user_accounts')
+        .select('*')
+        .or(`username.ilike.${trimmedUser},name.ilike.%${trimmedUser}%`)
+        .maybeSingle();
+      dbUser = data;
+    } catch (e) {
+      console.warn("Supabase user query exception during login:", e);
+    }
 
     let target: UserAccount | null = null;
 
@@ -1666,14 +1762,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         depot: dbUser.depot || 'Tous',
         lastLogin: dbUser.last_login ? dbUser.last_login.slice(0, 16).replace("T", " ") : 'À l\'instant',
         status: dbUser.status || 'Actif',
-        password: dbUser.password
+        password: dbUser.password || localMatch?.password,
+        customPermissions: dbUser.custom_permissions ? (typeof dbUser.custom_permissions === 'string' ? JSON.parse(dbUser.custom_permissions) : dbUser.custom_permissions) : (dbUser.customPermissions || localMatch?.customPermissions)
       };
-    } else {
-      // 2. Search in loaded users array
-      const matched = users.find(u => u.username.toLowerCase() === trimmedUser || u.name.toLowerCase() === trimmedUser);
-      if (matched) {
-        target = matched;
-      }
+    } else if (localMatch) {
+      target = localMatch;
     }
 
     // STRICT DENIAL: If user does not exist in DB or users list, deny access immediately
@@ -1691,8 +1784,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    // Verify Password: Require exact match with account password or system default (admin123)
-    const expectedPassword = target.password || "admin123";
+    // Verify Password: match account password, local saved password, or system fallback
+    const expectedPassword = target.password || localMatch?.password || "admin123";
     if (trimmedPass !== expectedPassword) {
       return {
         success: false,
@@ -1709,7 +1802,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem("RizStock_CurrentUser", JSON.stringify(target));
 
     const nowStr = new Date().toISOString().slice(0, 16).replace("T", " ");
-    await supabase.from('user_accounts').update({ last_login: nowStr }).eq('username', target.username);
+    try {
+      await supabase.from('user_accounts').update({ last_login: nowStr }).eq('username', target.username);
+    } catch (e) {}
 
     logActivity("UTILISATEUR", `Connexion réussie de ${target.name} (${target.username}) à l'ERP (Rôle: ${target.role.toUpperCase()})`);
     showToast(`Bienvenue ${target.name} ! Connexion réussie (${target.role.toUpperCase()}).`, "success");
