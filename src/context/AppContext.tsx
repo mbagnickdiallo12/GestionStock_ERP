@@ -1691,11 +1691,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     }
 
-    // Verify Password if set on account
-    if (target.password && target.password !== trimmedPass) {
+    // Verify Password: Require exact match with account password or system default (admin123)
+    const expectedPassword = target.password || "admin123";
+    if (trimmedPass !== expectedPassword) {
       return {
         success: false,
-        message: "Mot de passe incorrect pour cet utilisateur."
+        message: `Mot de passe incorrect pour l'utilisateur "${target.username}".`
       };
     }
 
