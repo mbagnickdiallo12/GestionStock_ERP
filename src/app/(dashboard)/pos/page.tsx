@@ -9,7 +9,7 @@ import { formatNumber, formatFCFA } from "@/lib/utils";
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function POSPage() {
-  const { products, categories, stocks, activeDepotId, depots, cart, addToCart, updateCartQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading } = useApp();
+  const { products, categories, stocks, activeDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -217,7 +217,7 @@ export default function POSPage() {
             </div>
 
             {/* Cart Items List */}
-            <div className="mt-4 space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+            <div className="mt-4 space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
               {cart.length === 0 ? (
                 <div className="text-center py-10 text-slate-400 space-y-2">
                   <ShoppingBag className="w-10 h-10 mx-auto opacity-30" />
@@ -225,27 +225,59 @@ export default function POSPage() {
                 </div>
               ) : (
                 cart.map(item => (
-                  <div key={item.productId} className="bg-[#0f172a] border border-white/10 p-3 rounded-xl flex items-center justify-between text-xs">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-white">{item.title}</span>
-                      <span className="text-slate-400">{formatNumber(item.price)} F x {item.qty} = <strong className="text-emerald-400">{formatNumber(item.price * item.qty)} F</strong></span>
+                  <div key={item.productId} className="bg-[#0f172a] border border-white/10 p-3 rounded-xl flex flex-col gap-2 text-xs shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-white truncate">{item.title}</span>
+                        <span className="text-slate-400">{formatNumber(item.price)} F x {formatNumber(item.qty)} = <strong className="text-emerald-400">{formatNumber(item.price * item.qty)} F</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-[#1e293b] p-1 rounded-xl border border-white/15 shrink-0">
+                        <button
+                          onClick={() => updateCartQty(item.productId, -1)}
+                          className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg cursor-pointer transition-colors"
+                          title="Diminuer (-1 sac)"
+                        >
+                          <Minus className="w-3.5 h-3.5 stroke-[3]" />
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.qty === 0 ? "" : item.qty}
+                          onChange={(e) => {
+                            const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                            setCartItemQty(item.productId, isNaN(val) ? 0 : val);
+                          }}
+                          onBlur={() => {
+                            if (!item.qty || item.qty <= 0) {
+                              setCartItemQty(item.productId, 1);
+                            }
+                          }}
+                          className="w-14 text-center font-black text-white text-sm bg-[#090d16] outline-none font-mono rounded px-1 py-0.5 border border-white/15 focus:border-emerald-400 focus:bg-black shadow-inner"
+                          title="Saisir directement le nombre de sacs"
+                        />
+                        <button
+                          onClick={() => updateCartQty(item.productId, 1)}
+                          className="w-6 h-6 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg cursor-pointer transition-colors shadow-sm"
+                          title="Augmenter (+1 sac)"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-[#1e293b] p-1 rounded-xl border border-white/15">
-                      <button
-                        onClick={() => updateCartQty(item.productId, -1)}
-                        className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-lg cursor-pointer transition-colors"
-                        title="Diminuer la quantité"
-                      >
-                        <Minus className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
-                      <span className="w-6 text-center font-black text-white text-sm">{item.qty}</span>
-                      <button
-                        onClick={() => updateCartQty(item.productId, 1)}
-                        className="w-6 h-6 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 rounded-lg cursor-pointer transition-colors"
-                        title="Augmenter la quantité"
-                      >
-                        <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
+
+                    {/* Quick Wholesale Bulk Quantity Buttons */}
+                    <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5">
+                      <span className="text-[10px] text-slate-400 font-semibold">Gros :</span>
+                      {[+10, +50, +100, +200, +500].map(batch => (
+                        <button
+                          key={batch}
+                          type="button"
+                          onClick={() => updateCartQty(item.productId, batch)}
+                          className="bg-white/5 hover:bg-emerald-600 hover:text-white text-slate-300 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors cursor-pointer border border-white/10"
+                        >
+                          +{batch}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 ))

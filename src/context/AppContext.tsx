@@ -63,6 +63,7 @@ interface AppContextType {
   cart: CartItem[];
   addToCart: (productId: string) => void;
   updateCartQty: (productId: string, delta: number) => void;
+  setCartItemQty: (productId: string, qty: number) => void;
   clearCart: () => void;
   processCheckout: (clientName: string, paymentMode: Sale['paymentMode']) => void;
 
@@ -977,6 +978,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (item.productId === productId) {
         const newQty = item.qty + delta;
         return newQty > 0 ? { ...item, qty: newQty } : null;
+      }
+      return item;
+    }).filter(Boolean) as CartItem[]);
+  };
+
+  const setCartItemQty = (productId: string, exactQty: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.productId === productId) {
+        const safeQty = isNaN(exactQty) ? 0 : Math.max(0, exactQty);
+        return safeQty > 0 ? { ...item, qty: safeQty } : null;
       }
       return item;
     }).filter(Boolean) as CartItem[]);
@@ -2412,7 +2423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mobileMenuOpen, setMobileMenuOpen,
       settings, updateSettings, categories, depots, products, stocks, sales, cashSessions, movements, purchases, suppliers, clients, debtTransactions, inventories, expenses, employees, users, auditLogs,
       logActivity, clearAuditLogs,
-      cart, addToCart, updateCartQty, clearCart, processCheckout,
+      cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout,
       activeModal, openModal, closeModal,
       confirmState, askConfirm, closeConfirm,
       toasts, showToast,
