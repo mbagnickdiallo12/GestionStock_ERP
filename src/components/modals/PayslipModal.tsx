@@ -45,130 +45,161 @@ export const PayslipModal: React.FC = () => {
       footer={(
         <div className="flex items-center justify-between w-full no-print">
           <div className="flex items-center gap-2">
-            <button onClick={handlePrint} className="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors">
+            <button onClick={handlePrint} className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30 transition-all">
               <Printer className="w-3.5 h-3.5" /> Imprimer Bulletin (PDF)
             </button>
-            <button onClick={handlePaySalary} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors">
+            <button onClick={handlePaySalary} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-900/30 transition-all">
               <CheckCircle2 className="w-3.5 h-3.5" /> Valider Paiement Net
             </button>
           </div>
-          <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+          <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors">
             Fermer
           </button>
         </div>
       )}
     >
-      <div className="printable-document bg-white text-slate-900 p-5 rounded-xl font-sans space-y-4 border border-slate-200 shadow-sm text-xs">
-        {/* Header Logo & Document Title */}
-        <div className="flex justify-between items-start pb-3 border-b border-slate-200">
-          <div className="flex items-center gap-2.5">
+      <div className="printable-document bg-white text-slate-900 p-8 sm:p-10 rounded-2xl font-sans border border-slate-200/80 shadow-md">
+        
+        {/* Header: Logo & Title + Status Badge */}
+        <div className="flex justify-between items-start pb-4 border-b border-slate-200/80">
+          <div className="flex items-center gap-3">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
+              <img src={settings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base shrink-0">
-                <Wheat className="w-5 h-5" />
+              <div className="flex items-center gap-2">
+                <span className="text-xl sm:text-2xl font-black text-[#1e1b4b] tracking-tight">
+                  {settings.companyName ? settings.companyName.split(" ")[0].toLowerCase() : "rizstock"}
+                </span>
               </div>
             )}
-            <div>
-              <h1 className="text-sm font-bold text-slate-900 leading-tight">{settings.companyName || "RizStock ERP"}</h1>
-              <p className="text-[10px] text-slate-500">{settings.address || "Dakar, Sénégal"} • Tél: {settings.phone || "+221 33 800 00 00"}</p>
-            </div>
+            <span className="text-slate-400 font-bold uppercase text-[11px] tracking-wider pl-3 border-l border-slate-200">
+              BULLETIN DE PAIE & SALAIRE
+            </span>
           </div>
 
           <div className="text-right">
-            <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">BULLETIN DE PAIE</h2>
-            <div className="text-[10px] text-slate-600 mt-0.5 space-x-2 font-medium">
-              <span>Période: <strong className="text-slate-900">Août 2026</strong></span>
-              <span>•</span>
-              <span>Matricule: <span className="text-slate-900 font-mono">{employee.id}</span></span>
-            </div>
+            <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">
+              STATUT PAIE
+            </span>
+            <span className={`px-3 py-1 rounded text-xs font-bold inline-block border ${
+              employee.lastPay?.includes('2026') 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                : 'bg-blue-50 border-blue-200 text-blue-700'
+            }`}>
+              {employee.lastPay?.includes('2026') ? 'Payé / Réglé' : 'Prêt pour Règlement'}
+            </span>
           </div>
         </div>
 
-        {/* Employee Metadata Line */}
-        <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+        {/* Metadata Section */}
+        <div className="space-y-3.5 my-6 text-xs">
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Salarié / Bénéficiaire</span>
-            <strong className="text-slate-900 font-bold block text-[11px]">{employee.name}</strong>
+            <span className="text-slate-400 text-[11px] block font-medium">Matricule & Référence Salarié :</span>
+            <span className="font-extrabold text-slate-800 text-sm font-mono tracking-tight">{employee.id}</span>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Poste Occupé</span>
-            <strong className="text-slate-900 font-semibold block text-[11px]">{employee.role}</strong>
+            <span className="text-slate-400 text-[11px] block font-medium">Salarié / Bénéficiaire :</span>
+            <span className="font-extrabold text-slate-900 text-sm">{employee.name}</span>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Dépôt d'Affectation</span>
-            <strong className="text-slate-900 font-semibold block text-[11px]">{depot ? depot.name : "Dépôt Central"}</strong>
+            <span className="text-slate-400 text-[11px] block font-medium">Fonction / Poste :</span>
+            <span className="font-bold text-slate-800 text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60 inline-block">
+              {employee.role} • Contrat {employee.contractType || 'CDI'}
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-400 text-[11px] block font-medium">Dépôt d'Affectation :</span>
+            <span className="font-semibold text-slate-700 text-sm">{depot ? depot.name : "Dépôt Central"}</span>
+          </div>
+          <div>
+            <span className="text-slate-400 text-[11px] block font-medium">Période de Règlement :</span>
+            <span className="font-extrabold text-slate-800 text-sm">Août 2026</span>
           </div>
         </div>
 
-        {/* Salary Breakdown Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="w-full text-left text-[11px]">
+        {/* Document Subject Title */}
+        <h2 className="text-base sm:text-lg font-black text-slate-900 mb-4 tracking-tight pt-2">
+          Bulletin de Paie & Reçu d'Émoluments - {settings.companyName || "RizStock ERP"}
+        </h2>
+
+        {/* Gains & Deductions Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 font-bold uppercase text-[10px] text-slate-600 bg-slate-100">
-                <th className="py-1.5 px-2.5 whitespace-nowrap">Détail des Éléments de Salaire & Déductions</th>
-                <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Gains (FCFA)</th>
-                <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Retenues (FCFA)</th>
+              <tr className="border-y border-slate-200 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                <th className="py-2.5 px-2">RUBRIQUE SALARIALE</th>
+                <th className="py-2.5 px-2">BASE / TAUX</th>
+                <th className="py-2.5 px-2 text-right">GAINS (FCFA)</th>
+                <th className="py-2.5 px-2 text-right">RETENUES (FCFA)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 font-sans">
-              <tr className="hover:bg-slate-50">
-                <td className="py-1.5 px-2.5 font-semibold text-slate-900 whitespace-nowrap">Salaire de Base Contractuel</td>
-                <td className="py-1.5 px-2.5 text-right font-mono font-bold text-slate-900 whitespace-nowrap">+{formatFCFA(baseSalary)}</td>
-                <td className="py-1.5 px-2.5 text-right text-slate-400 font-mono whitespace-nowrap">-</td>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className="py-3 px-2 font-bold text-slate-900">Salaire de Base Contractuel</td>
+                <td className="py-3 px-2 text-slate-500 font-mono">100.0%</td>
+                <td className="py-3 px-2 text-right font-semibold text-slate-900 font-mono">{formatFCFA(baseSalary)}</td>
+                <td className="py-3 px-2 text-right text-slate-400 font-mono">-</td>
               </tr>
-              {transportAllowance > 0 && (
-                <tr className="hover:bg-slate-50">
-                  <td className="py-1.5 px-2.5 font-medium text-slate-800 whitespace-nowrap">Prime Obligatoire de Transport</td>
-                  <td className="py-1.5 px-2.5 text-right font-mono font-bold text-slate-900 whitespace-nowrap">+{formatFCFA(transportAllowance)}</td>
-                  <td className="py-1.5 px-2.5 text-right text-slate-400 font-mono whitespace-nowrap">-</td>
-                </tr>
-              )}
+              <tr>
+                <td className="py-3 px-2 font-bold text-slate-900">Indemnité de Transport Légale</td>
+                <td className="py-3 px-2 text-slate-500 font-mono">Forfait Mensuel</td>
+                <td className="py-3 px-2 text-right font-semibold text-slate-900 font-mono">{formatFCFA(transportAllowance)}</td>
+                <td className="py-3 px-2 text-right text-slate-400 font-mono">-</td>
+              </tr>
               {housingAllowance > 0 && (
-                <tr className="hover:bg-slate-50">
-                  <td className="py-1.5 px-2.5 font-medium text-slate-800 whitespace-nowrap">Indemnité de Logement</td>
-                  <td className="py-1.5 px-2.5 text-right font-mono font-bold text-slate-900 whitespace-nowrap">+{formatFCFA(housingAllowance)}</td>
-                  <td className="py-1.5 px-2.5 text-right text-slate-400 font-mono whitespace-nowrap">-</td>
+                <tr>
+                  <td className="py-3 px-2 font-bold text-slate-900">Prime de Logement & Sujétion</td>
+                  <td className="py-3 px-2 text-slate-500 font-mono">Forfait</td>
+                  <td className="py-3 px-2 text-right font-semibold text-slate-900 font-mono">{formatFCFA(housingAllowance)}</td>
+                  <td className="py-3 px-2 text-right text-slate-400 font-mono">-</td>
                 </tr>
               )}
-              <tr className="bg-slate-100 font-bold text-slate-900 border-t border-b border-slate-300">
-                <td className="py-1.5 px-2.5 uppercase text-[10px] whitespace-nowrap">TOTAL SALAIRE BRUT DU MOIS</td>
-                <td className="py-1.5 px-2.5 text-right font-mono font-extrabold text-slate-900 whitespace-nowrap">{formatFCFA(grossSalary)}</td>
-                <td className="py-1.5 px-2.5 text-right text-slate-400 font-mono whitespace-nowrap">-</td>
-              </tr>
-              <tr className="hover:bg-slate-50">
-                <td className="py-1.5 px-2.5 text-slate-700 whitespace-nowrap">Cotisation Retraite IPRES (5.6%)</td>
-                <td className="py-1.5 px-2.5 text-right text-slate-400 font-mono whitespace-nowrap">-</td>
-                <td className="py-1.5 px-2.5 text-right font-mono font-bold text-rose-700 whitespace-nowrap">-{formatFCFA(ipresRetirement)}</td>
+              <tr>
+                <td className="py-3 px-2 font-bold text-slate-900">Cotisation IPRES Retraite Salariale</td>
+                <td className="py-3 px-2 text-slate-500 font-mono">5.6% IPRES</td>
+                <td className="py-3 px-2 text-right text-slate-400 font-mono">-</td>
+                <td className="py-3 px-2 text-right font-semibold text-red-600 font-mono">-{formatFCFA(ipresRetirement)}</td>
               </tr>
               {advances > 0 && (
-                <tr className="hover:bg-slate-50">
-                  <td className="py-1.5 px-2.5 text-slate-700 whitespace-nowrap">Remboursement Avance sur Salaire</td>
-                  <td className="py-1.5 px-2.5 text-right text-slate-400 font-mono whitespace-nowrap">-</td>
-                  <td className="py-1.5 px-2.5 text-right font-mono font-bold text-rose-700 whitespace-nowrap">-{formatFCFA(advances)}</td>
+                <tr>
+                  <td className="py-3 px-2 font-bold text-slate-900">Remboursement Acomptes sur Salaire</td>
+                  <td className="py-3 px-2 text-slate-500 font-mono">Déduction</td>
+                  <td className="py-3 px-2 text-right text-slate-400 font-mono">-</td>
+                  <td className="py-3 px-2 text-right font-semibold text-red-600 font-mono">-{formatFCFA(advances)}</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Minimal Net Payable Banner */}
-        <div className="bg-slate-900 text-white p-2.5 rounded-lg flex items-center justify-between">
-          <span className="font-bold text-[11px] uppercase text-slate-200">NET À PAYER AU SALARIÉ</span>
-          <span className="text-base font-extrabold font-mono text-emerald-400">{formatFCFA(netPayable)}</span>
+        {/* Total Highlight Box */}
+        <div className="flex justify-end mt-8">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-6 py-3.5 flex items-center justify-between gap-8 min-w-[320px]">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">NET À PAYER AU SALARIÉ :</span>
+            <span className="text-xl font-black text-emerald-600 font-mono tracking-tight">{formatFCFA(netPayable)}</span>
+          </div>
         </div>
 
         {/* Signatures */}
-        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 font-sans text-[10px]">
+        <div className="grid grid-cols-2 gap-8 pt-8 mt-6 border-t border-slate-200/80 text-xs">
           <div>
-            <span className="font-bold text-slate-600 block uppercase">Signature du Salarié</span>
-            <div className="h-8 border-b border-slate-300 mt-1" />
+            <span className="font-bold text-slate-600 block uppercase text-[10px] tracking-wider mb-1">Direction des Ressources Humaines</span>
+            <p className="text-[10px] text-slate-400">Pour ordre et approbation de la paie</p>
+            <div className="h-12 border-b border-dashed border-slate-300 mt-2" />
           </div>
           <div className="text-right">
-            <span className="font-bold text-slate-600 block uppercase">Visa Direction RH</span>
-            <div className="h-8 border-b border-slate-300 mt-1" />
+            <span className="font-bold text-slate-600 block uppercase text-[10px] tracking-wider mb-1">Signature de l'Employé</span>
+            <p className="text-[10px] text-slate-400">Reconnaissance de réception des fonds</p>
+            <div className="h-12 border-b border-dashed border-slate-300 mt-2" />
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-200/80 pt-4 mt-8 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+          <span>Bulletin édité par {settings.companyName || "RizStock ERP"} - N° IPRES / CSS : 402910-A</span>
+          <span>Document certifié électroniquement</span>
+        </div>
+
       </div>
     </Modal>
   );

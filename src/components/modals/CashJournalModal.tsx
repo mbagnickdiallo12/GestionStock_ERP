@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, isMatchingDepot } from "@/lib/utils";
 import { Printer, Search, Wheat } from "lucide-react";
 
 export const CashJournalModal: React.FC = () => {
@@ -16,8 +16,8 @@ export const CashJournalModal: React.FC = () => {
 
   if (!isOpen) return null;
 
-  const currentDepot = depots.find(d => d.id === activeDepotId);
-  const depotNameDisplay = activeDepotId === "all" ? "Tous les Dépôts (Global)" : (currentDepot?.name || "Dakar Port");
+  const currentDepot = depots.find(d => isMatchingDepot(d.id, activeDepotId, depots));
+  const depotNameDisplay = activeDepotId === "all" ? "Tous les Dépôts (Global)" : (currentDepot?.name || "Dépôt Central");
 
   // Combine sales and expenses into a single cash journal timeline
   const saleEntries = sales.map(s => ({
@@ -43,7 +43,7 @@ export const CashJournalModal: React.FC = () => {
   }));
 
   const journalEntries = [...saleEntries, ...expenseEntries]
-    .filter(e => activeDepotId === "all" || e.depotId === activeDepotId)
+    .filter(e => isMatchingDepot(e.depotId, activeDepotId, depots))
     .filter(e => {
       const matchSearch = e.id.toLowerCase().includes(searchTerm.toLowerCase()) || e.party.toLowerCase().includes(searchTerm.toLowerCase());
       const matchPayment = paymentFilter === "all" || e.paymentMode === paymentFilter;
@@ -68,156 +68,134 @@ export const CashJournalModal: React.FC = () => {
     <Modal
       id="modal-cash-journal"
       title="Journal de Caisse & Enregistrements"
+      size="lg"
       footer={(
         <div className="flex items-center justify-between w-full no-print">
           <button
             onClick={handlePrint}
-            className="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+            className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30 transition-all"
           >
-            <Printer className="w-3.5 h-3.5" /> Imprimer / PDF
+            <Printer className="w-3.5 h-3.5" /> Imprimer Journal de Caisse (PDF)
           </button>
           <button
             onClick={closeModal}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors"
+            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
           >
             Fermer
           </button>
         </div>
       )}
     >
-      <div className="printable-document bg-white text-slate-900 p-5 rounded-xl font-sans space-y-4 border border-slate-200 shadow-sm text-xs">
+      <div className="printable-document bg-white text-slate-900 p-8 sm:p-10 rounded-2xl font-sans border border-slate-200/80 shadow-md">
         
-        {/* Modern Compact Header */}
-        <div className="flex justify-between items-start pb-3 border-b border-slate-200">
-          <div className="flex items-center gap-2.5">
+        {/* Header: Logo & Title + Status Badge */}
+        <div className="flex justify-between items-start pb-4 border-b border-slate-200/80">
+          <div className="flex items-center gap-3">
             {settings?.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
+              <img src={settings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base shrink-0">
-                <Wheat className="w-5 h-5" />
+              <div className="flex items-center gap-2">
+                <span className="text-xl sm:text-2xl font-black text-[#1e1b4b] tracking-tight">
+                  {settings?.companyName ? settings.companyName.split(" ")[0].toLowerCase() : "rizstock"}
+                </span>
               </div>
             )}
-            <div>
-              <h1 className="text-sm font-bold text-slate-900 leading-tight">{settings?.companyName || "RizStock ERP"}</h1>
-              <p className="text-[10px] text-slate-500">{settings?.address || "Dakar, Sénégal"} • Tél: {settings?.phone || "+221 33 800 00 00"}</p>
-            </div>
+            <span className="text-slate-400 font-bold uppercase text-[11px] tracking-wider pl-3 border-l border-slate-200">
+              JOURNAL DE CAISSE OFFICIEL
+            </span>
           </div>
 
           <div className="text-right">
-            <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">Journal de Caisse</h2>
-            <div className="text-[10px] text-slate-600 mt-0.5 space-x-2 font-medium">
-              <span>Dépôt: <strong className="text-slate-900">{depotNameDisplay}</strong></span>
-              <span>•</span>
-              <span>Date: <span className="text-slate-900">{printDate}</span></span>
-            </div>
+            <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">
+              STATUT DU REGISTRE
+            </span>
+            <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1 rounded text-xs font-bold inline-block">
+              Journal Équilibré
+            </span>
           </div>
         </div>
 
-        {/* Compact Key Metric Line */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+        {/* Metadata Section */}
+        <div className="space-y-3.5 my-6 text-xs">
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Entrées Cash</span>
-            <span className="text-xs font-bold text-emerald-700 font-mono whitespace-nowrap">+{formatFCFA(totalCashIn)}</span>
+            <span className="text-slate-400 text-[11px] block font-medium">N° de Référence Journal :</span>
+            <span className="font-extrabold text-slate-800 text-sm font-mono tracking-tight">JRN-{new Date().toISOString().slice(0, 10)}</span>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Entrées Wave</span>
-            <span className="text-xs font-bold text-blue-700 font-mono whitespace-nowrap">+{formatFCFA(totalWaveIn)}</span>
+            <span className="text-slate-400 text-[11px] block font-medium">Point de Vente / Dépôt :</span>
+            <span className="font-extrabold text-slate-900 text-sm">{depotNameDisplay}</span>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Total Sorties</span>
-            <span className="text-xs font-bold text-rose-700 font-mono whitespace-nowrap">-{formatFCFA(totalOut)}</span>
+            <span className="text-slate-400 text-[11px] block font-medium">Caissier / Opérateur en charge :</span>
+            <span className="font-semibold text-slate-700 text-sm">{currentUser?.name || "Direction Caisse"}</span>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold text-slate-500 block">Solde Net Espèces</span>
-            <span className="text-xs font-bold text-slate-900 font-mono whitespace-nowrap">{formatFCFA(netCashFlow)}</span>
+            <span className="text-slate-400 text-[11px] block font-medium">Date & Heure d'arrêté :</span>
+            <span className="font-extrabold text-slate-800 text-sm">{printDate}</span>
           </div>
         </div>
 
-        {/* Screen Filters (Hidden in PDF print) */}
-        <div className="no-print flex flex-wrap items-center justify-between gap-2 bg-slate-100 p-2 rounded-lg">
-          <div className="flex items-center gap-2 bg-white border border-slate-300 px-2.5 py-1 rounded flex-1 min-w-[180px]">
-            <Search className="w-3.5 h-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-slate-900 text-xs outline-none w-full"
-            />
-          </div>
+        {/* Document Subject Title */}
+        <h2 className="text-base sm:text-lg font-black text-slate-900 mb-4 tracking-tight pt-2">
+          Registre Chronologique des Recettes & Dépenses - {settings?.companyName || "RizStock ERP"}
+        </h2>
 
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="bg-white border border-slate-300 text-slate-900 text-xs px-2.5 py-1 rounded outline-none cursor-pointer font-medium"
-          >
-            <option value="all">Tous les Modes de Règlement</option>
-            <option value="Espece">Espèces / Cash</option>
-            <option value="Wave">Wave / Mobile Money</option>
-            <option value="Virement">Virement Bancaire</option>
-            <option value="Cheque">Chèque Bancaire</option>
-            <option value="Credit">Crédit Client</option>
-          </select>
-        </div>
-
-        {/* Clean Compact Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="w-full text-left text-[11px]">
+        {/* Entries Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 font-bold uppercase text-[10px] text-slate-600 bg-slate-100">
-                <th className="py-1.5 px-2.5 whitespace-nowrap">Date</th>
-                <th className="py-1.5 px-2.5 whitespace-nowrap">Référence</th>
-                <th className="py-1.5 px-2.5 whitespace-nowrap">Tiers / Client</th>
-                <th className="py-1.5 px-2.5 whitespace-nowrap">Opération</th>
-                <th className="py-1.5 px-2.5 whitespace-nowrap">Règlement</th>
-                <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Montant</th>
+              <tr className="border-y border-slate-200 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                <th className="py-2.5 px-2">DATE & RÉF</th>
+                <th className="py-2.5 px-2">TIERS / DÉSIGNATION</th>
+                <th className="py-2.5 px-2">MODE</th>
+                <th className="py-2.5 px-2 text-right">ENCAISSEMENT</th>
+                <th className="py-2.5 px-2 text-right">DÉCAISSEMENT</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {journalEntries.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-4 text-center text-slate-400 italic text-[11px]">
-                    Aucune écriture dans le journal de caisse.
+            <tbody className="divide-y divide-slate-100">
+              {journalEntries.map(e => (
+                <tr key={e.id}>
+                  <td className="py-3 px-2 text-slate-600 align-top whitespace-nowrap text-[11px]">
+                    <div>{e.date}</div>
+                    <div className="font-mono font-bold text-slate-800 text-[10px]">{e.id}</div>
+                  </td>
+                  <td className="py-3 px-2 align-top">
+                    <div className="font-bold text-slate-900 text-sm">{e.party || "Client Comptoir"}</div>
+                    <div className="text-slate-500 text-[10px]">
+                      {e.type === 'VENTE' ? `Vente Riz (${e.bags} sacs)` : 'Dépense / Manutention'}
+                    </div>
+                  </td>
+                  <td className="py-3 px-2 align-top">
+                    <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold text-slate-700">
+                      {e.paymentMode}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2 text-right font-black text-emerald-600 text-sm align-top whitespace-nowrap font-mono">
+                    {e.amount > 0 ? `+${formatFCFA(e.amount)}` : "-"}
+                  </td>
+                  <td className="py-3 px-2 text-right font-black text-red-600 text-sm align-top whitespace-nowrap font-mono">
+                    {e.amount < 0 ? `-${formatFCFA(Math.abs(e.amount))}` : "-"}
                   </td>
                 </tr>
-              ) : (
-                journalEntries.map((entry, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="py-1.5 px-2.5 text-slate-600 whitespace-nowrap">{entry.date}</td>
-                    <td className="py-1.5 px-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">{entry.id}</td>
-                    <td className="py-1.5 px-2.5 font-medium text-slate-900 whitespace-nowrap">{entry.party}</td>
-                    <td className="py-1.5 px-2.5 whitespace-nowrap">
-                      {entry.type === 'VENTE' ? (
-                        <span className="text-emerald-700 font-semibold">Vente ({entry.bags} sacs)</span>
-                      ) : (
-                        <span className="text-rose-700 font-semibold">Dépense Caisse</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-2.5 text-slate-600 whitespace-nowrap">{entry.paymentMode}</td>
-                    <td className={`py-1.5 px-2.5 text-right font-mono font-bold whitespace-nowrap ${entry.amount >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                      {entry.amount >= 0 ? `+${formatFCFA(entry.amount)}` : formatFCFA(entry.amount)}
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
 
-        {/* Minimal Signatures */}
-        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 font-sans text-[10px]">
-          <div>
-            <span className="font-bold text-slate-600 block uppercase">Visa Caissier</span>
-            <div className="h-8 border-b border-slate-300 mt-1" />
-            <span className="text-slate-400 block mt-0.5">{currentUser?.name || "Caissier"}</span>
-          </div>
-
-          <div className="text-right">
-            <span className="font-bold text-slate-600 block uppercase">Visa Comptabilité</span>
-            <div className="h-8 border-b border-slate-300 mt-1" />
-            <span className="text-slate-400 block mt-0.5">Signature autorisée</span>
+        {/* Total Highlight Box */}
+        <div className="flex justify-end mt-8">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-6 py-3.5 flex items-center justify-between gap-8 min-w-[320px]">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">SOLDE NET EN CAISSE :</span>
+            <span className="text-xl font-black text-emerald-600 font-mono tracking-tight">{formatFCFA(netCashFlow)}</span>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-200/80 pt-4 mt-8 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+          <span>Journal certifié conforme par la Direction Financière - {settings?.companyName || "RizStock ERP"}</span>
+          <span>Document certifié électroniquement</span>
+        </div>
+
       </div>
     </Modal>
   );

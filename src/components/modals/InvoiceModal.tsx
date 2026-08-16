@@ -21,12 +21,25 @@ export const InvoiceModal: React.FC = () => {
     window.print();
   };
 
+  const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
+    productId: "prod-1",
+    title: "Royal Sénégal 100% Brisure (Sac 25kg)",
+    qty: Math.max(1, Math.round((sale.totalAmount || 300000) / 15000)),
+    price: 15000
+  }];
+
+  const statusLabel = sale.status === 'Payé' || !sale.status ? 'Payé / Réglé' : sale.status;
+  const isPaid = statusLabel.toLowerCase().includes('payé') || statusLabel.toLowerCase().includes('réglé');
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-        {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between no-print">
-          <h3 className="font-bold text-sm text-white">Facture Officielle N° {sale.id}</h3>
+      <div className="bg-[#1e293b] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+        {/* Modal Top Toolbar */}
+        <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between no-print bg-[#0f172a]/60">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h3 className="font-bold text-sm text-white">Facture & Reçu Officiel N° {sale.id}</h3>
+          </div>
           <button
             onClick={closeModal}
             className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
@@ -35,125 +48,135 @@ export const InvoiceModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Modal Body: Printable Receipt Box */}
-        <div className="p-5 overflow-y-auto flex-1">
-          <div className="printable-document bg-white text-slate-900 p-5 rounded-xl font-sans space-y-4 border border-slate-200 text-xs shadow-sm">
+        {/* Modal Body: Printable Receipt Document */}
+        <div className="p-6 overflow-y-auto flex-1 bg-[#090d16]/30">
+          <div className="printable-document bg-white text-slate-900 p-8 sm:p-10 rounded-2xl font-sans border border-slate-200/80 shadow-md">
             
-            {/* Header Flex */}
-            <div className="flex justify-between items-start pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2.5">
+            {/* Header: Logo & Title + Status Badge */}
+            <div className="flex justify-between items-start pb-4 border-b border-slate-200/80">
+              <div className="flex items-center gap-3">
                 {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
+                  <img src={settings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base shrink-0">
-                    <Wheat className="w-5 h-5" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl sm:text-2xl font-black text-[#1e1b4b] tracking-tight">
+                      {settings.companyName ? settings.companyName.split(" ")[0].toLowerCase() : "rizstock"}
+                    </span>
                   </div>
                 )}
-                <div>
-                  <h1 className="text-sm font-bold text-slate-900 leading-tight">{settings.companyName}</h1>
-                  <p className="text-[10px] text-slate-500">{settings.address} • Tél: {settings.phone}</p>
-                </div>
+                <span className="text-slate-400 font-bold uppercase text-[11px] tracking-wider pl-3 border-l border-slate-200">
+                  FACTURE & REÇU OFFICIEL
+                </span>
               </div>
 
               <div className="text-right">
-                <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wide">FACTURE</h2>
-                <div className="text-[10px] text-slate-600 mt-0.5 space-x-2 font-medium">
-                  <span>N°: <strong className="text-slate-900 font-mono">{sale.id}</strong></span>
-                  <span>•</span>
-                  <span>Date: <span className="text-slate-900">{sale.date}</span></span>
-                </div>
+                <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">
+                  STATUT DU RÈGLEMENT
+                </span>
+                <span className={`px-3 py-1 rounded text-xs font-bold inline-block border ${
+                  isPaid 
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                }`}>
+                  {statusLabel}
+                </span>
               </div>
             </div>
 
-            {/* Client & Issuer Metadata Line */}
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px]">
+            {/* Metadata Section */}
+            <div className="space-y-3.5 my-6 text-xs">
               <div>
-                <span className="text-[9px] font-bold text-slate-400 uppercase block">Vendeur / Dépôt</span>
-                <p className="font-bold text-slate-900">{settings.companyName}</p>
-                <p className="text-slate-600 text-[10px]">Dépôt: {depot ? depot.name : "Dépôt Central"}</p>
+                <span className="text-slate-400 text-[11px] block font-medium">N° de Référence Transaction :</span>
+                <span className="font-extrabold text-slate-800 text-sm font-mono tracking-tight">{sale.id}</span>
               </div>
-
-              <div className="text-right">
-                <span className="text-[9px] font-bold text-slate-400 uppercase block">Client / Facturé à</span>
-                <p className="font-bold text-slate-900">{sale.clientName || "Client Comptoir"}</p>
-                <p className="text-slate-600 text-[10px]">Règlement: {sale.paymentMode}</p>
+              <div>
+                <span className="text-slate-400 text-[11px] block font-medium">Atelier / Bénéficiaire / Client :</span>
+                <span className="font-extrabold text-slate-900 text-sm">{sale.clientName || "Client Comptoir"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 text-[11px] block font-medium">Point de Vente / Dépôt :</span>
+                <span className="font-semibold text-slate-700 text-sm">{depot ? depot.name : "Dépôt Central"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 text-[11px] block font-medium">Date de règlement :</span>
+                <span className="font-extrabold text-slate-800 text-sm">{sale.date}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 text-[11px] block font-medium">Mode de Paiement :</span>
+                <span className="font-bold text-slate-800 text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60 inline-block">
+                  {sale.paymentMode || "Espèces (Cash)"}
+                </span>
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="w-full text-left text-[11px]">
+            {/* Document Subject Title */}
+            <h2 className="text-base sm:text-lg font-black text-slate-900 mb-4 tracking-tight pt-2">
+              Facture de Vente de Riz & Marchandises - {settings.companyName || "RizStock ERP"}
+            </h2>
+
+            {/* Items Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
-                    <th className="py-1.5 px-2.5 whitespace-nowrap">Désignation Produit</th>
-                    <th className="py-1.5 px-2.5 text-center whitespace-nowrap">Quantité</th>
-                    <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Prix Unitaire</th>
-                    <th className="py-1.5 px-2.5 text-right whitespace-nowrap">Montant Total</th>
+                  <tr className="border-y border-slate-200 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-2.5 px-2">DATE</th>
+                    <th className="py-2.5 px-2">DÉSIGNATION DU PRODUIT / FORFAIT</th>
+                    <th className="py-2.5 px-2 text-right">MONTANT (FCFA)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {((sale.items && sale.items.length > 0) ? sale.items : [{
-                    productId: "prod-1",
-                    title: "Royal Sénégal 100% Brisure (Sac 25kg)",
-                    qty: Math.max(1, Math.round((sale.totalAmount || 300000) / 15000)),
-                    price: 15000
-                  }]).map((it, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="py-1.5 px-2.5 font-bold text-slate-900 whitespace-nowrap">
-                        {it.title && it.title !== 'prod-1' ? it.title : "Royal Sénégal 100% Brisure (Sac 25kg)"}
+                <tbody className="divide-y divide-slate-100">
+                  {saleItems.map((it, idx) => (
+                    <tr key={idx}>
+                      <td className="py-3.5 px-2 text-slate-600 align-top whitespace-nowrap text-[11px]">
+                        {sale.date?.slice(0, 10) || "2026-08-16"}
                       </td>
-                      <td className="py-1.5 px-2.5 text-center font-bold text-slate-900 whitespace-nowrap">{formatNumber(it.qty || 1)} Sacs</td>
-                      <td className="py-1.5 px-2.5 text-right text-slate-700 font-mono font-medium whitespace-nowrap">{formatFCFA(it.price || 15000)}</td>
-                      <td className="py-1.5 px-2.5 text-right font-black text-slate-900 font-mono whitespace-nowrap">{formatFCFA((it.price || 15000) * (it.qty || 1))}</td>
+                      <td className="py-3.5 px-2 align-top">
+                        <div className="font-bold text-slate-900 text-sm">
+                          {it.title} ({formatNumber(it.qty)} {it.qty > 1 ? 'Sacs' : 'Sac'})
+                        </div>
+                        <div className="text-slate-500 text-xs mt-0.5">
+                          Prix unitaire: {formatFCFA(it.price)} • Règlement {sale.paymentMode || "Espèces"}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-2 text-right font-black text-slate-900 text-sm align-top whitespace-nowrap font-mono">
+                        {formatFCFA(it.price * it.qty)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Totals Breakdown */}
-            <div className="flex justify-between items-start pt-1 text-[11px]">
-              <div className="text-[10px] text-slate-500 italic max-w-xs">
-                Merci de votre confiance et de votre fidélité !
-              </div>
-
-              <div className="w-56 border-t border-b border-slate-300 py-2 space-y-1">
-                <div className="flex justify-between text-slate-600">
-                  <span>Total HT :</span>
-                  <span className="font-mono font-bold text-slate-900">{formatFCFA(sale.totalAmount)}</span>
-                </div>
-                <div className="flex justify-between text-slate-600 text-[10px]">
-                  <span>TVA (0% Exonéré) :</span>
-                  <span>0 FCFA</span>
-                </div>
-                <div className="flex justify-between font-extrabold text-xs text-slate-900 pt-1 border-t border-slate-200">
-                  <span>Total TTC :</span>
-                  <span className="text-emerald-700 font-mono text-sm">{formatFCFA(sale.totalAmount)}</span>
-                </div>
+            {/* Total Highlight Box */}
+            <div className="flex justify-end mt-8">
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-6 py-3.5 flex items-center justify-between gap-8 min-w-[280px]">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">TOTAL RÉGLÉ :</span>
+                <span className="text-lg font-black text-blue-600 font-mono tracking-tight">{formatFCFA(sale.totalAmount)}</span>
               </div>
             </div>
 
-            {/* Signatures */}
-            <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 font-sans text-[10px]">
-              <div>
-                <span className="font-bold text-slate-600 block uppercase">Signature Client</span>
-                <div className="h-8 border-b border-slate-300 mt-1" />
-              </div>
-              <div className="text-right">
-                <span className="font-bold text-slate-600 block uppercase">Signature Vendeur / Gérant</span>
-                <div className="h-8 border-b border-slate-300 mt-1" />
-              </div>
+            {/* Footer */}
+            <div className="border-t border-slate-200/80 pt-4 mt-12 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+              <span>Facture officielle éditée par {settings.companyName || "RizStock ERP"} - NINEA {settings.ninea || "00984521"} - {settings.address || "Dakar, Sénégal"}</span>
+              <span>Document certifié électroniquement</span>
             </div>
+
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="px-5 py-2.5 border-t border-white/10 bg-black/20 flex items-center justify-end gap-2.5 no-print">
-          <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">
+        {/* Modal Bottom Actions */}
+        <div className="px-5 py-3 border-t border-white/10 bg-[#0f172a]/60 flex items-center justify-end gap-2.5 no-print">
+          <button
+            onClick={closeModal}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+          >
             Fermer
           </button>
-          <button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
-            <Printer className="w-3.5 h-3.5" /> Imprimer Facture (PDF)
+          <button
+            onClick={handlePrint}
+            className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30 transition-all"
+          >
+            <Printer className="w-3.5 h-3.5" /> Imprimer Reçu / Facture (PDF)
           </button>
         </div>
       </div>
