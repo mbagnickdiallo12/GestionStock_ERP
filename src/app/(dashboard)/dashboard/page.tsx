@@ -52,8 +52,9 @@ export default function DashboardPage() {
   const salesTodayVal = filteredSales.reduce((acc, s) => acc + s.totalAmount, 0);
   const bagsTodayVal = filteredSales.reduce((acc, s) => acc + s.items.reduce((a, b) => a + b.qty, 0), 0);
 
-  // Monthly Expenses
-  const expMonthVal = expenses.reduce((acc, e) => acc + e.amount, 0);
+  // Monthly Expenses (dynamically filtered by active depot)
+  const filteredExpenses = activeDepotId === "all" ? expenses : expenses.filter(e => e.depotId === activeDepotId);
+  const expMonthVal = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -124,7 +125,10 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="text-2xl font-black text-white">{formatNumber(expMonthVal)} F</div>
-          <div className="text-xs text-amber-400 font-semibold">Manutention, Transport & Loyer</div>
+          <div className="text-xs text-amber-400 font-semibold flex items-center justify-between">
+            <span>{activeDepotId === "all" ? "Manutention, Transport & Loyer" : (depots.find(d => d.id === activeDepotId)?.name || "Dépôt actif")}</span>
+            {activeDepotId !== "all" && <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-300 font-bold">Filtre Dépôt</span>}
+          </div>
         </div>
       </div>
 
