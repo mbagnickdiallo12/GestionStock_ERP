@@ -61,3 +61,42 @@ export function canManage(user: UserAccount | null | undefined, moduleKey?: stri
 
 export const canDelete = canManage;
 export const canEdit = canManage;
+
+export function isMatchingDepot(
+  itemDepotId: string | undefined | null,
+  targetDepotId: string | undefined | null,
+  depots: any[]
+): boolean {
+  if (!targetDepotId || targetDepotId === "all") return true;
+  if (!itemDepotId) return false;
+
+  const cleanItem = String(itemDepotId).trim();
+  const cleanTarget = String(targetDepotId).trim();
+
+  // 1. Direct ID / value match
+  if (cleanItem.toLowerCase() === cleanTarget.toLowerCase()) return true;
+
+  const targetDepot = depots.find(d => d.id.toLowerCase() === cleanTarget.toLowerCase() || d.name.toLowerCase() === cleanTarget.toLowerCase());
+  const itemDepot = depots.find(d => d.id.toLowerCase() === cleanItem.toLowerCase() || d.name.toLowerCase() === cleanItem.toLowerCase());
+
+  // 2. Both point to the exact same depot in depots array
+  if (targetDepot && itemDepot && targetDepot.id === itemDepot.id) return true;
+
+  // 3. Name or substring match
+  if (targetDepot) {
+    const tName = targetDepot.name.toLowerCase();
+    const tCity = (targetDepot.city || "").toLowerCase();
+    const iName = cleanItem.toLowerCase();
+
+    if (tName === iName || (tCity && tCity === iName)) return true;
+    if (tName.includes(iName) || iName.includes(tName)) return true;
+    if (tCity && (tCity.includes(iName) || iName.includes(tCity))) return true;
+  }
+
+  // 4. Default fallback: if item is 'dep-1' or 'dep-01' and targetDepot is the first depot
+  if ((cleanItem === 'dep-1' || cleanItem === 'dep-01') && depots.length > 0 && targetDepot && depots[0].id === targetDepot.id) {
+    return true;
+  }
+
+  return false;
+}

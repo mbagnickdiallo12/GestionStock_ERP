@@ -5,7 +5,7 @@ import { Plus, Receipt, Search, Building2, Truck, Wallet, ShieldAlert, ArrowDown
 import { useApp } from "@/context/AppContext";
 import { Modal } from "@/components/ui/Modal";
 import { Expense } from "@/types";
-import { formatFCFA, formatNumber, canCreate } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate, isMatchingDepot } from "@/lib/utils";
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
 export default function DepensesPage() {
@@ -66,7 +66,7 @@ export default function DepensesPage() {
                         e.beneficiary.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         e.user.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCat = catFilter === "all" || e.category === catFilter;
-    const matchDepot = depotFilter === "all" || e.depotId === depotFilter;
+    const matchDepot = isMatchingDepot(e.depotId, depotFilter, depots);
     return matchSearch && matchCat && matchDepot;
   });
 
@@ -250,7 +250,7 @@ export default function DepensesPage() {
             <tbody className="divide-y divide-white/5">
               {filteredExpenses.length > 0 ? (
                 filteredExpenses.map(e => {
-                  const depot = depots.find(d => d.id === e.depotId);
+                  const depot = depots.find(d => isMatchingDepot(e.depotId, d.id, depots));
                   return (
                     <tr key={e.id} className="hover:bg-white/5 transition-colors">
                       <td className="p-3 font-bold text-white whitespace-nowrap">{e.id}</td>

@@ -4,7 +4,7 @@ import React from "react";
 import { Boxes, DollarSign, TrendingUp, Receipt, ArrowUpRight, Plus, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
-import { formatNumber, formatFCFA } from "@/lib/utils";
+import { formatNumber, formatFCFA, isMatchingDepot } from "@/lib/utils";
 
 import { SkeletonStatCard, SkeletonChart, SkeletonTable } from "@/components/ui/Skeleton";
 
@@ -30,13 +30,13 @@ export default function DashboardPage() {
     );
   }
 
-  let filteredSales = activeDepotId === "all" ? sales : sales.filter(s => s.depotId === activeDepotId);
+  let filteredSales = sales.filter(s => isMatchingDepot(s.depotId, activeDepotId, depots));
 
   // Total Bags & Valuation
   let totalBags = 0;
   let stockValue = 0;
   Object.keys(stocks).forEach(depId => {
-    if (activeDepotId === "all" || activeDepotId === depId) {
+    if (isMatchingDepot(depId, activeDepotId, depots)) {
       Object.keys(stocks[depId]).forEach(prodId => {
         const qty = stocks[depId][prodId] || 0;
         totalBags += qty;
@@ -53,7 +53,7 @@ export default function DashboardPage() {
   const bagsTodayVal = filteredSales.reduce((acc, s) => acc + s.items.reduce((a, b) => a + b.qty, 0), 0);
 
   // Monthly Expenses (dynamically filtered by active depot)
-  const filteredExpenses = activeDepotId === "all" ? expenses : expenses.filter(e => e.depotId === activeDepotId);
+  const filteredExpenses = expenses.filter(e => isMatchingDepot(e.depotId, activeDepotId, depots));
   const expMonthVal = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
 
   return (

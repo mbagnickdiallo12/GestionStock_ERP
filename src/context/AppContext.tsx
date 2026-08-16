@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { Depot, Product, StockMatrix, Sale, StockMovement, Purchase, Supplier, Client, Expense, Employee, UserAccount, CompanySettings, SaleItem, AuditLog, DebtTransaction, InventorySession, Category, CashSession, BackupVersion } from "@/types";
 import { INITIAL_SETTINGS, INITIAL_DEPOTS, INITIAL_PRODUCTS, INITIAL_STOCKS, INITIAL_SALES, INITIAL_MOVEMENTS, INITIAL_PURCHASES, INITIAL_SUPPLIERS, INITIAL_CLIENTS, INITIAL_DEBT_TRANSACTIONS, INITIAL_INVENTORIES, INITIAL_EXPENSES, INITIAL_EMPLOYEES, INITIAL_USERS, INITIAL_AUDIT_LOGS, INITIAL_CATEGORIES, INITIAL_CASH_SESSIONS } from "@/lib/mockData";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, isMatchingDepot } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 interface Toast {
@@ -168,7 +168,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const [debtTransactions, setDebtTransactions] = useState<DebtTransaction[]>(INITIAL_DEBT_TRANSACTIONS);
   const [inventories, setInventories] = useState<InventorySession[]>(INITIAL_INVENTORIES);
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Expenses");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_EXPENSES;
+  });
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [backupVersions, setBackupVersions] = useState<BackupVersion[]>(() => {
     if (typeof window !== "undefined") {
@@ -450,7 +461,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (dbExpenses) {
-        setExpenses(dbExpenses.map(e => ({
+        const loadedExp = dbExpenses.map(e => ({
           id: e.id,
           date: e.date ? e.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
           depotId: e.depot_id || 'dep-1',
@@ -459,7 +470,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           beneficiary: e.beneficiary || '',
           desc: e.description || '',
           user: e.user_name || 'Utilisateur'
-        })));
+        }));
+        setExpenses(loadedExp);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_Expenses", JSON.stringify(loadedExp));
+        }
       }
 
       if (dbMovements) {
@@ -2341,12 +2356,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addExpense = async (expData: Omit<Expense, 'id' | 'date'>) => {
     const id = `EXP-${Math.floor(1000 + Math.random() * 9000)}`;
     const date = new Date().toISOString().slice(0, 10);
-    const targetDepot = depots.find(d => d.id === expData.depotId) || depots[0];
+    const targetDepot = depots.find(d => isMatchingDepot(expData.depotId, d.id, depots)) || depots[0];
     const targetDepotId = targetDepot ? targetDepot.id : (expData.depotId || 'dep-1');
 
     const newExp: Expense = { ...expData, depotId: targetDepotId, id, date };
 
-    setExpenses(prev => [newExp, ...prev]);
+    setExpenses(prev => {
+      const next = [newExp, ...prev];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Expenses", JSON.stringify(next));
+      }
+      return next;
+    });
 
     if (targetDepot) {
       await supabase.from('depots').upsert({
