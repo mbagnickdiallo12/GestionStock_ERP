@@ -54,127 +54,130 @@ export const InventoryDetailsModal: React.FC = () => {
         </div>
       )}
     >
-      <div className="printable-document bg-white text-slate-900 p-8 sm:p-10 rounded-2xl font-sans border border-slate-200/80 shadow-md">
+      <div className="printable-document bg-white text-slate-900 p-8 rounded-2xl font-sans border border-slate-200/80 shadow-md">
         
-        {/* Header: Logo & Title + Status Badge */}
-        <div className="flex justify-between items-start pb-4 border-b border-slate-200/80">
-          <div className="flex items-center gap-3">
-            {settings?.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-xl sm:text-2xl font-black text-[#1e1b4b] tracking-tight">
-                  {settings?.companyName ? settings.companyName.split(" ")[0].toLowerCase() : "rizstock"}
-                </span>
-              </div>
-            )}
-            <span className="text-slate-400 font-bold uppercase text-[11px] tracking-wider pl-3 border-l border-slate-200">
-              PV D'INVENTAIRE & AUDIT
-            </span>
+        {/* Top Content Group */}
+        <div>
+          {/* Header: Logo & Title + Status Badge */}
+          <div className="flex justify-between items-start pb-3 border-b border-slate-200/80">
+            <div className="flex items-center gap-3">
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xl sm:text-2xl font-black text-[#1e1b4b] tracking-tight">
+                    {settings?.companyName ? settings.companyName.split(" ")[0].toLowerCase() : "rizstock"}
+                  </span>
+                </div>
+              )}
+              <span className="text-slate-400 font-bold uppercase text-[10.5px] tracking-wider pl-3 border-l border-slate-200">
+                PV D'INVENTAIRE & AUDIT
+              </span>
+            </div>
+
+            <div className="text-right">
+              <span className="text-slate-400 font-semibold text-[9.5px] uppercase tracking-wider block mb-1">
+                STATUT AUDIT
+              </span>
+              <span className={`px-2.5 py-0.5 rounded text-xs font-bold inline-block border ${
+                targetInv.status === "Ajusté"
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
+              }`}>
+                {targetInv.status === "Ajusté" ? "Stock Ajusté" : "En cours / PV Ouvert"}
+              </span>
+            </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider block mb-1">
-              STATUT AUDIT
-            </span>
-            <span className={`px-3 py-1 rounded text-xs font-bold inline-block border ${
-              targetInv.status === "Ajusté"
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                : 'bg-amber-50 border-amber-200 text-amber-700'
-            }`}>
-              {targetInv.status === "Ajusté" ? "Stock Ajusté" : "En cours / PV Ouvert"}
-            </span>
+          {/* Metadata Section */}
+          <div className="space-y-2.5 my-5 text-xs">
+            <div>
+              <span className="text-slate-400 text-[10.5px] block font-medium">N° de Référence Procès-Verbal :</span>
+              <span className="font-extrabold text-slate-800 text-sm font-mono tracking-tight">{targetInv.id}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 text-[10.5px] block font-medium">Dépôt Audité & Contrôlé :</span>
+              <span className="font-extrabold text-slate-900 text-sm">{targetInv.depotName}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 text-[10.5px] block font-medium">Auditeur & Commissaire aux Stocks :</span>
+              <span className="font-semibold text-slate-700 text-sm">{targetInv.auditor || "Direction Audit"}</span>
+            </div>
+            <div>
+              <span className="text-slate-400 text-[10.5px] block font-medium">Date & Heure du Recensement :</span>
+              <span className="font-extrabold text-slate-800 text-sm">{targetInv.date}</span>
+            </div>
           </div>
-        </div>
 
-        {/* Metadata Section */}
-        <div className="space-y-3.5 my-6 text-xs">
-          <div>
-            <span className="text-slate-400 text-[11px] block font-medium">N° de Référence Procès-Verbal :</span>
-            <span className="font-extrabold text-slate-800 text-sm font-mono tracking-tight">{targetInv.id}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 text-[11px] block font-medium">Dépôt Audité & Contrôlé :</span>
-            <span className="font-extrabold text-slate-900 text-sm">{targetInv.depotName}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 text-[11px] block font-medium">Auditeur & Commissaire aux Stocks :</span>
-            <span className="font-semibold text-slate-700 text-sm">{targetInv.auditor || "Direction Audit"}</span>
-          </div>
-          <div>
-            <span className="text-slate-400 text-[11px] block font-medium">Date & Heure du Recensement :</span>
-            <span className="font-extrabold text-slate-800 text-sm">{targetInv.date}</span>
-          </div>
-        </div>
+          {/* Document Subject Title */}
+          <h2 className="text-sm sm:text-base font-black text-slate-900 mb-3 tracking-tight">
+            Procès-Verbal de Recensement Physique Contradictoire - {settings?.companyName || "RizStock ERP"}
+          </h2>
 
-        {/* Document Subject Title */}
-        <h2 className="text-base sm:text-lg font-black text-slate-900 mb-4 tracking-tight pt-2">
-          Procès-Verbal de Recensement Physique Contradictoire - {settings?.companyName || "RizStock ERP"}
-        </h2>
-
-        {/* Audit Discrepancies Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-y border-slate-200 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-2">VARIÉTÉ / DÉSIGNATION</th>
-                <th className="py-2.5 px-2 text-center">THÉORIQUE (SACS)</th>
-                <th className="py-2.5 px-2 text-center">PHYSIQUE (SACS)</th>
-                <th className="py-2.5 px-2 text-right">ÉCART CONSTATÉ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {targetInv.items.map((it, idx) => (
-                <tr key={idx}>
-                  <td className="py-3 px-2 align-top">
-                    <div className="font-bold text-slate-900 text-sm">{it.productTitle}</div>
-                    <div className="text-slate-500 text-[10px]">{it.note || "Comptage physique unitaire contradictoire"}</div>
-                  </td>
-                  <td className="py-3 px-2 text-center font-semibold text-slate-700 font-mono align-top">
-                    {formatNumber(it.expectedQty)}
-                  </td>
-                  <td className="py-3 px-2 text-center font-bold text-slate-900 font-mono align-top">
-                    {formatNumber(it.actualQty)}
-                  </td>
-                  <td className="py-3 px-2 text-right font-black font-mono align-top">
-                    <span className={it.discrepancy === 0 ? "text-slate-400" : (it.discrepancy > 0 ? "text-emerald-600" : "text-red-600")}>
-                      {it.discrepancy > 0 ? `+${it.discrepancy}` : it.discrepancy}
-                    </span>
-                  </td>
+          {/* Audit Discrepancies Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-y border-slate-200 text-slate-400 font-bold uppercase text-[9.5px] tracking-wider">
+                  <th className="py-2 px-2">VARIÉTÉ / DÉSIGNATION</th>
+                  <th className="py-2 px-2 text-center">THÉORIQUE (SACS)</th>
+                  <th className="py-2 px-2 text-center">PHYSIQUE (SACS)</th>
+                  <th className="py-2 px-2 text-right">ÉCART CONSTATÉ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Total Highlight Box */}
-        <div className="flex justify-end mt-8">
-          <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-6 py-3.5 flex items-center justify-between gap-8 min-w-[320px]">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">ÉCART GLOBAL TOTAL :</span>
-            <span className={`text-xl font-black font-mono tracking-tight ${
-              targetInv.totalDiscrepancy === 0 ? "text-slate-700" : (targetInv.totalDiscrepancy > 0 ? "text-emerald-600" : "text-red-600")
-            }`}>
-              {targetInv.totalDiscrepancy > 0 ? `+${formatNumber(targetInv.totalDiscrepancy)}` : formatNumber(targetInv.totalDiscrepancy)} SACS
-            </span>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {targetInv.items.map((it, idx) => (
+                  <tr key={idx}>
+                    <td className="py-2.5 px-2 align-top">
+                      <div className="font-bold text-slate-900 text-xs sm:text-sm">{it.productTitle}</div>
+                      <div className="text-slate-500 text-[10px]">{it.note || "Comptage physique unitaire contradictoire"}</div>
+                    </td>
+                    <td className="py-2.5 px-2 text-center font-semibold text-slate-700 font-mono align-top text-xs">
+                      {formatNumber(it.expectedQty)}
+                    </td>
+                    <td className="py-2.5 px-2 text-center font-bold text-slate-900 font-mono align-top text-xs">
+                      {formatNumber(it.actualQty)}
+                    </td>
+                    <td className="py-2.5 px-2 text-right font-black font-mono align-top text-xs">
+                      <span className={it.discrepancy === 0 ? "text-slate-400" : (it.discrepancy > 0 ? "text-emerald-600" : "text-red-600")}>
+                        {it.discrepancy > 0 ? `+${it.discrepancy}` : it.discrepancy}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
 
-        {/* Signatures */}
-        <div className="grid grid-cols-2 gap-8 pt-8 mt-6 border-t border-slate-200/80 text-xs">
-          <div>
-            <span className="font-bold text-slate-600 block uppercase text-[10px] tracking-wider mb-1">Gérant du Dépôt / Magasinier</span>
-            <p className="text-[10px] text-slate-400">Reconnaissance du comptage contradictoire</p>
-            <div className="h-12 border-b border-dashed border-slate-300 mt-2" />
+          {/* Total Highlight Box */}
+          <div className="flex justify-end my-5">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-5 py-3 flex items-center justify-between gap-6 min-w-[280px]">
+              <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">ÉCART GLOBAL TOTAL :</span>
+              <span className={`text-xl font-black font-mono tracking-tight ${
+                targetInv.totalDiscrepancy === 0 ? "text-slate-700" : (targetInv.totalDiscrepancy > 0 ? "text-emerald-600" : "text-red-600")
+              }`}>
+                {targetInv.totalDiscrepancy > 0 ? `+${formatNumber(targetInv.totalDiscrepancy)}` : formatNumber(targetInv.totalDiscrepancy)} SACS
+              </span>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="font-bold text-slate-600 block uppercase text-[10px] tracking-wider mb-1">Auditeur Interne / Commissaire</span>
-            <p className="text-[10px] text-slate-400">Pour validation et clôture du PV</p>
-            <div className="h-12 border-b border-dashed border-slate-300 mt-2" />
+
+          {/* Signatures */}
+          <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200/80 text-xs">
+            <div>
+              <span className="font-bold text-slate-600 block uppercase text-[9.5px] tracking-wider mb-0.5">Gérant du Dépôt / Magasinier</span>
+              <p className="text-[9.5px] text-slate-400">Reconnaissance du comptage contradictoire</p>
+              <div className="h-10 border-b border-dashed border-slate-300 mt-1" />
+            </div>
+            <div className="text-right">
+              <span className="font-bold text-slate-600 block uppercase text-[9.5px] tracking-wider mb-0.5">Auditeur Interne / Commissaire</span>
+              <p className="text-[9.5px] text-slate-400">Pour validation et clôture du PV</p>
+              <div className="h-10 border-b border-dashed border-slate-300 mt-1" />
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200/80 pt-4 mt-8 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+        <div className="border-t border-slate-200/80 pt-3 mt-auto flex flex-wrap items-center justify-between gap-2 text-[9.5px] text-slate-400">
           <span>PV d'inventaire officiel émis par {settings?.companyName || "RizStock ERP"} - NINEA {settings?.ninea || "00984521"}</span>
           <span>Document certifié électroniquement</span>
         </div>
