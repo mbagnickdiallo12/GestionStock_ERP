@@ -349,6 +349,15 @@ export default function ProduitsPage() {
                 className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none font-mono font-bold text-emerald-400" 
               />
             </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-semibold text-slate-400 block mb-1">Seuil d'Alerte Stock Bas (Sacs)</label>
+              <input 
+                type="number" 
+                value={alertT} 
+                onChange={(e) => setAlertT(parseInt(e.target.value) || 500)} 
+                className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none" 
+              />
+            </div>
           </div>
         </form>
       </Modal>

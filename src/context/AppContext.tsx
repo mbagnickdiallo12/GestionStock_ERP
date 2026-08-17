@@ -91,6 +91,7 @@ interface AppContextType {
   
   addProduct: (product: Omit<Product, 'id' | 'code'>) => void;
   updateProduct: (id: string, updatedData: Partial<Product>) => void;
+  updateProductStock: (productId: string, depotStocks: { [depotId: string]: number }) => void;
   deleteProduct: (id: string) => void;
 
   addPurchase: (purchase: Omit<Purchase, 'id' | 'date'>) => void;
@@ -145,12 +146,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeRole, setActiveRole] = useState<string>("admin");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-  const [settings, setSettings] = useState<CompanySettings>(INITIAL_SETTINGS);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [depots, setDepots] = useState<Depot[]>(INITIAL_DEPOTS);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [stocks, setStocks] = useState<StockMatrix>(INITIAL_STOCKS);
-  const [sales, setSales] = useState<Sale[]>(INITIAL_SALES);
+  const [settings, setSettings] = useState<CompanySettings>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Settings");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_SETTINGS;
+  });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Categories");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_CATEGORIES;
+  });
+
+  const [depots, setDepots] = useState<Depot[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Depots");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_DEPOTS;
+  });
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Products");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_PRODUCTS;
+  });
+
+  const [stocks, setStocks] = useState<StockMatrix>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Stocks");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_STOCKS;
+  });
+
+  const [sales, setSales] = useState<Sale[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Sales");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_SALES;
+  });
+
   const [cashSessions, setCashSessions] = useState<CashSession[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("RizStock_CashSessions");
@@ -163,12 +236,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_CASH_SESSIONS;
   });
-  const [movements, setMovements] = useState<StockMovement[]>(INITIAL_MOVEMENTS);
-  const [purchases, setPurchases] = useState<Purchase[]>(INITIAL_PURCHASES);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(INITIAL_SUPPLIERS);
-  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
+
+  const [movements, setMovements] = useState<StockMovement[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Movements");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_MOVEMENTS;
+  });
+
+  const [purchases, setPurchases] = useState<Purchase[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Purchases");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_PURCHASES;
+  });
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Suppliers");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_SUPPLIERS;
+  });
+
+  const [clients, setClients] = useState<Client[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Clients");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_CLIENTS;
+  });
+
   const [debtTransactions, setDebtTransactions] = useState<DebtTransaction[]>(INITIAL_DEBT_TRANSACTIONS);
-  const [inventories, setInventories] = useState<InventorySession[]>(INITIAL_INVENTORIES);
+  const [inventories, setInventories] = useState<InventorySession[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Inventories");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_INVENTORIES;
+  });
+
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("RizStock_Expenses");
@@ -181,7 +315,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_EXPENSES;
   });
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("RizStock_Employees");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+    return INITIAL_EMPLOYEES;
+  });
   const [backupVersions, setBackupVersions] = useState<BackupVersion[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("RizStock_Backup_Versions");
@@ -1445,6 +1591,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     closeModal();
   };
 
+  const updateProductStock = async (productId: string, depotStocks: { [depotId: string]: number }) => {
+    setStocks(prev => {
+      const updated = { ...prev };
+      Object.entries(depotStocks).forEach(([depId, qty]) => {
+        if (!updated[depId]) updated[depId] = {};
+        updated[depId][productId] = Math.max(0, qty);
+      });
+      localStorage.setItem("RizStock_Stocks", JSON.stringify(updated));
+      return updated;
+    });
+
+    const upsertRows = Object.entries(depotStocks).map(([depId, qty]) => ({
+      depot_id: depId,
+      product_id: productId,
+      quantity: Math.max(0, qty)
+    }));
+
+    if (upsertRows.length > 0) {
+      await supabase.from('depot_stocks').upsert(upsertRows, { onConflict: 'depot_id,product_id' });
+    }
+
+    const prod = products.find(p => p.id === productId);
+    logActivity("STOCK", `Mise à jour directe du stock réel pour "${prod?.title || productId}"`);
+    showToast(`Stock réel mis à jour avec succès !`, "success");
+  };
+
   const deleteProduct = async (id: string) => {
     const target = products.find(p => p.id === id);
     if (!target) return;
@@ -2428,7 +2600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       confirmState, askConfirm, closeConfirm,
       toasts, showToast,
       openCashSession, closeCashSession,
-      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense,
+      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, updateProductStock, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense,
       backupVersions, createBackupSnapshot, restoreBackupVersion, deleteBackupVersion, importBackupJSON, resetSystemWithAutoBackup
     }}>
       {children}

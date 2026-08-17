@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ShoppingBag, Trash2, CheckCircle2, Minus, Plus, ImageIcon, Calculator, BookOpen, Lock, Unlock } from "lucide-react";
+import { Search, ShoppingBag, Trash2, CheckCircle2, Minus, Plus, ImageIcon, Calculator, BookOpen, Lock, Unlock, Building2, Warehouse, AlertCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Sale } from "@/types";
-import { formatNumber, formatFCFA } from "@/lib/utils";
+import { formatNumber, formatFCFA, isMatchingDepot } from "@/lib/utils";
 
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function POSPage() {
-  const { products, categories, stocks, activeDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading } = useApp();
+  const { products, categories, stocks, activeDepotId, setActiveDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -33,6 +33,7 @@ export default function POSPage() {
   }
 
   const openSession = cashSessions.find(s => s.status === "Ouverte");
+  const activeDepotObj = depots.find(d => isMatchingDepot(d.id, activeDepotId, depots));
 
   const handleCheckout = () => {
     if (!openSession) {
@@ -95,8 +96,9 @@ export default function POSPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Product Catalog with Visuals */}
         <div className="lg:col-span-2 bg-[#1e293b] border border-white/10 rounded-2xl p-5 flex flex-col gap-4">
+          {/* Top Filter Bar: Search, Category & Depot Selector */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-1.5 rounded-xl flex-1 min-w-[220px]">
+            <div className="flex items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-1.5 rounded-xl flex-1 min-w-[200px]">
               <Search className="w-4 h-4 text-slate-400" />
               <input
                 type="text"
@@ -106,10 +108,27 @@ export default function POSPage() {
                 className="bg-transparent text-white text-sm outline-none w-full"
               />
             </div>
+
+            {/* Depot Selector for Point of Sale */}
+            <div className="flex items-center gap-1.5 bg-[#0f172a] border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+              <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <select
+                value={activeDepotId}
+                onChange={(e) => setActiveDepotId(e.target.value)}
+                className="bg-transparent text-white text-xs sm:text-sm outline-none cursor-pointer font-bold"
+                title="Choisir le dépôt vendeur pour afficher le stock réel"
+              >
+                <option value="all" className="bg-[#1e293b] text-white">📍 Tous les Dépôts (Stock Cumulé)</option>
+                {depots.map(d => (
+                  <option key={d.id} value={d.id} className="bg-[#1e293b] text-white">📍 {d.name}</option>
+                ))}
+              </select>
+            </div>
+
             <select
               value={catFilter}
               onChange={(e) => setCatFilter(e.target.value)}
-              className="bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-1.5 rounded-xl outline-none cursor-pointer font-semibold"
+              className="bg-[#0f172a] border border-white/15 text-white text-xs sm:text-sm px-3 py-1.5 rounded-xl outline-none cursor-pointer font-semibold"
             >
               <option value="all">Toutes Catégories</option>
               {categories.map(c => (
@@ -121,20 +140,48 @@ export default function POSPage() {
           {/* Grid of Product Cards with Square Images (1:1 Ratio) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[620px] pr-1">
             {filteredProducts.map(p => {
-              let avail = 0;
+              // Compute exact stock for this product based on active depot filter
+              let totalStock = 0;
               if (activeDepotId === "all") {
-                Object.keys(stocks).forEach(dId => avail += (stocks[dId][p.id] || 0));
+                depots.forEach(d => {
+                  totalStock += (stocks[d.id] && stocks[d.id][p.id]) || 0;
+                });
+                Object.keys(stocks).forEach(dId => {
+                  if (!depots.some(d => d.id === dId)) {
+                    totalStock += (stocks[dId] && stocks[dId][p.id]) || 0;
+                  }
+                });
               } else {
-                avail = (stocks[activeDepotId] && stocks[activeDepotId][p.id]) || 0;
+                Object.keys(stocks).forEach(dId => {
+                  if (isMatchingDepot(dId, activeDepotId, depots)) {
+                    totalStock += (stocks[dId] && stocks[dId][p.id]) || 0;
+                  }
+                });
               }
 
-              const isLow = avail <= p.alertThreshold;
+              const inCartItem = cart.find(item => item.productId === p.id);
+              const inCartQty = inCartItem ? inCartItem.qty : 0;
+              const remainingAvail = Math.max(0, totalStock - inCartQty);
+              const isOutOfStock = totalStock <= 0;
+              const isLow = remainingAvail <= p.alertThreshold && !isOutOfStock;
 
               return (
                 <div
                   key={p.id}
-                  onClick={() => addToCart(p.id)}
-                  className="bg-[#0f172a] border border-white/10 hover:border-emerald-500 rounded-2xl overflow-hidden flex flex-col justify-between cursor-pointer transition-all hover:-translate-y-1 group shadow-lg shadow-black/40"
+                  onClick={() => {
+                    if (isOutOfStock) {
+                      showToast(`Rupture de stock pour "${p.title}"`, "warning");
+                      return;
+                    }
+                    if (remainingAvail <= 0) {
+                      showToast(`Quantité maximum disponible (${totalStock} sacs) déjà dans le panier !`, "warning");
+                      return;
+                    }
+                    addToCart(p.id);
+                  }}
+                  className={`bg-[#0f172a] border rounded-2xl overflow-hidden flex flex-col justify-between cursor-pointer transition-all hover:-translate-y-1 group shadow-lg shadow-black/40 ${
+                    isOutOfStock ? "border-rose-900/40 opacity-70" : "border-white/10 hover:border-emerald-500"
+                  }`}
                 >
                   {/* Top Square Image Container (Format Carré 1:1) */}
                   <div className="relative aspect-square w-full bg-[#090d16] p-3 flex items-center justify-center border-b border-white/10 overflow-hidden">
@@ -157,26 +204,53 @@ export default function POSPage() {
                     <span className="absolute top-2.5 left-2.5 bg-emerald-950/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 font-bold text-[10px] px-2 py-0.5 rounded-md font-mono shadow-lg">
                       {p.code}
                     </span>
+
+                    {/* In Cart Indicator Overlay */}
+                    {inCartQty > 0 && (
+                      <span className="absolute bottom-2.5 right-2.5 bg-emerald-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1">
+                        ✓ {inCartQty} au panier
+                      </span>
+                    )}
                   </div>
 
                   {/* Body Content */}
                   <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                     <div>
                       <h4 className="font-extrabold text-sm text-white leading-snug group-hover:text-emerald-400 transition-colors">{p.title}</h4>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className={`text-xs ${isLow ? 'text-red-400 font-bold' : 'text-slate-400'}`}>
-                          Stock: <strong className="text-white">{formatNumber(avail)} Sacs</strong>
+                      
+                      {/* Stock Details */}
+                      <div className="flex flex-wrap items-center justify-between gap-1 mt-2">
+                        <span className={`text-xs ${isOutOfStock ? 'text-rose-400 font-extrabold' : isLow ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
+                          Stock: <strong className={isOutOfStock ? "text-rose-400" : "text-white"}>{formatNumber(totalStock)} Sacs</strong>
+                          <span className="text-[10px] text-slate-500 ml-1">
+                            {activeDepotId === "all" ? "(Tous dépôts)" : `(${activeDepotObj?.name.split('-')[0].trim() || 'Dépôt'})`}
+                          </span>
                         </span>
-                        {isLow && (
-                          <span className="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-bold">Alerte</span>
-                        )}
+                        
+                        {isOutOfStock ? (
+                          <span className="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded font-extrabold">Rupture</span>
+                        ) : isLow ? (
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">Alerte</span>
+                        ) : null}
                       </div>
+
+                      {inCartQty > 0 && (
+                        <div className="text-[11px] text-emerald-400/90 font-semibold mt-1">
+                          Reste disponible: <strong className="text-white">{formatNumber(remainingAvail)} sacs</strong>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between border-t border-white/10 pt-2.5 mt-2">
                       <span className="text-base font-black text-emerald-400">{formatFCFA(p.sellPrice)}</span>
-                      <span className="text-xs font-bold text-slate-300 bg-white/5 group-hover:bg-emerald-600 group-hover:text-white px-2.5 py-1 rounded-lg transition-colors">
-                        + Ajouter
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-colors ${
+                        isOutOfStock 
+                          ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                          : remainingAvail <= 0
+                          ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                          : "text-slate-300 bg-white/5 group-hover:bg-emerald-600 group-hover:text-white"
+                      }`}>
+                        {isOutOfStock ? "Épuisé" : remainingAvail <= 0 ? "Max atteint" : "+ Ajouter"}
                       </span>
                     </div>
                   </div>

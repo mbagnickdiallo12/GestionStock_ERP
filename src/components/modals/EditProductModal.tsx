@@ -4,10 +4,11 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApp } from "@/context/AppContext";
 import { Product } from "@/types";
-import { Upload, Image as ImageIcon, X } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Warehouse, Boxes } from "lucide-react";
+import { formatNumber } from "@/lib/utils";
 
 export const EditProductModal: React.FC = () => {
-  const { activeModal, closeModal, products, categories, updateProduct } = useApp();
+  const { activeModal, closeModal, products, categories, depots, stocks, updateProduct, updateProductStock } = useApp();
 
   const isEditModal = activeModal && activeModal.startsWith("edit-product-");
   const productId = isEditModal ? activeModal.replace("edit-product-", "") : null;
@@ -20,6 +21,7 @@ export const EditProductModal: React.FC = () => {
   const [sellPrice, setSellPrice] = useState(22500);
   const [alertThreshold, setAlertThreshold] = useState(500);
   const [imageUrl, setImageUrl] = useState("");
+  const [depotStocks, setDepotStocks] = useState<{ [depotId: string]: number }>({});
 
   const PRESET_IMAGES = [
     { label: "👑 Royal Sénégal", url: "/royal_senegal_bag.jpg" },
@@ -38,8 +40,14 @@ export const EditProductModal: React.FC = () => {
       setSellPrice(targetProduct.sellPrice);
       setAlertThreshold(targetProduct.alertThreshold);
       setImageUrl(targetProduct.imageUrl || PRESET_IMAGES[0].url);
+
+      const initialDepotStocks: { [depotId: string]: number } = {};
+      depots.forEach(d => {
+        initialDepotStocks[d.id] = (stocks[d.id] && stocks[d.id][targetProduct.id]) || 0;
+      });
+      setDepotStocks(initialDepotStocks);
     }
-  }, [targetProduct]);
+  }, [targetProduct, depots, stocks]);
 
   if (!isEditModal || !targetProduct) return null;
 
@@ -54,9 +62,20 @@ export const EditProductModal: React.FC = () => {
     }
   };
 
+  const handleStockChange = (depotId: string, val: number) => {
+    setDepotStocks(prev => ({
+      ...prev,
+      [depotId]: isNaN(val) ? 0 : Math.max(0, val)
+    }));
+  };
+
+  const totalCalculatedStock = Object.values(depotStocks).reduce((acc, q) => acc + (q || 0), 0);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!productId) return;
+    
+    // 1. Update Product attributes
     updateProduct(productId, {
       title,
       category,
@@ -66,16 +85,19 @@ export const EditProductModal: React.FC = () => {
       alertThreshold,
       imageUrl
     });
+
+    // 2. Update Real Stock across all depots
+    updateProductStock(productId, depotStocks);
   };
 
   return (
     <Modal
       id={`edit-product-${productId}`}
-      title={`Modifier Produit: ${targetProduct.title}`}
+      title={`Modifier & Corriger Stock: ${targetProduct.title}`}
       footer={(
         <>
           <button onClick={closeModal} className="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer">Annuler</button>
-          <button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer">Enregistrer Produit & Photo</button>
+          <button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer">Enregistrer Produit & Stock Réel</button>
         </>
       )}
     >
@@ -134,6 +156,44 @@ export const EditProductModal: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Real Stock Management Section per Depot */}
+        <div className="bg-[#0f172a] border border-emerald-500/30 p-4 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+              <Boxes className="w-4 h-4 text-emerald-400" /> Stock Réel en Sacs (Multi-Dépôts)
+            </label>
+            <span className="text-xs font-bold text-white bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+              Total: <strong className="text-emerald-400">{formatNumber(totalCalculatedStock)} Sacs</strong>
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Ajustez directement les quantités réelles de sacs de riz disponibles physiquement dans chaque dépôt :
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {depots.map(d => (
+              <div key={d.id} className="bg-[#1e293b] border border-white/10 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-white block truncate flex items-center gap-1">
+                    <Warehouse className="w-3 h-3 text-slate-400 shrink-0" /> {d.name}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">{d.city}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <input
+                    type="number"
+                    min="0"
+                    value={depotStocks[d.id] ?? 0}
+                    onChange={(e) => handleStockChange(d.id, parseInt(e.target.value) || 0)}
+                    className="w-20 bg-[#0f172a] border border-white/20 text-emerald-400 font-extrabold text-xs px-2 py-1.5 rounded-lg text-right outline-none focus:border-emerald-500"
+                  />
+                  <span className="text-[11px] text-slate-400 font-bold">sacs</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
