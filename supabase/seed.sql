@@ -73,6 +73,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 9. INSÉRER LES COMPTES UTILISATEURS
 INSERT INTO user_accounts (username, name, role, depot, last_login, status) VALUES
+('mbagnickdiallo', 'Mbagnick Diallo', 'admin', 'Tous', NOW(), 'Actif'),
 ('moustapha.n', 'Moustapha Ndiaye', 'admin', 'Tous', NOW(), 'Actif'),
 ('ousmane.b', 'Ousmane Ba', 'gerant', 'Dépôt 1 - Dakar Port', NOW(), 'Actif'),
 ('awa.d', 'Awa Diop', 'caissier', 'Dépôt 1 - Dakar Port', NOW(), 'Actif'),
