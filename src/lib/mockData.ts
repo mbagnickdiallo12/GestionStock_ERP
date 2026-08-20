@@ -32,6 +32,7 @@ export const INITIAL_EXPENSES: Expense[] = [];
 export const INITIAL_EMPLOYEES: Employee[] = [];
 
 export const INITIAL_USERS: UserAccount[] = [
+  { username: "mbagnickdiallo", name: "Mbagnick Diallo", role: "admin", depot: "Tous", lastLogin: "Aujourd'hui", status: "Actif" },
   { username: "admin", name: "Administrateur Général", role: "admin", depot: "Tous", lastLogin: "Aujourd'hui", status: "Actif" }
 ];
 

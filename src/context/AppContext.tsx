@@ -652,6 +652,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })));
       }
 
+      if (dbDebtTx) {
+        const loadedDebts: DebtTransaction[] = dbDebtTx.map(d => ({
+          id: d.id,
+          clientId: d.client_id || '',
+          clientName: d.client_name || 'Client',
+          date: d.date ? d.date.slice(0, 16).replace("T", " ") : new Date().toISOString().slice(0, 16).replace("T", " "),
+          type: (d.type === 'RÈGLEMENT_TOTAL' ? 'RÈGLEMENT_TOTAL' : 'ACCOMPTE') as 'ACCOMPTE' | 'RÈGLEMENT_TOTAL',
+          amount: Number(d.amount || 0),
+          paymentMode: (d.payment_mode || 'Espece') as 'Espece' | 'Wave' | 'Virement' | 'Cheque',
+          note: d.note || '',
+          recordedBy: d.recorded_by || 'Administrateur'
+        }));
+        setDebtTransactions(loadedDebts);
+      }
+
       if (dbCash) {
         const loadedCash = dbCash.map(s => ({
           id: s.id,
@@ -671,13 +686,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           cashDiscrepancy: Number(s.cash_discrepancy || 0),
           status: (s.status || 'Ouverte') as 'Ouverte' | 'Clôturée'
         }));
-        setCashSessions(prev => {
-          const next = loadedCash.length > 0 ? loadedCash : prev;
-          if (typeof window !== "undefined") {
-            localStorage.setItem("RizStock_CashSessions", JSON.stringify(next));
-          }
-          return next;
-        });
+        setCashSessions(loadedCash);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_CashSessions", JSON.stringify(loadedCash));
+        }
       }
 
       if (dbUsers) {
@@ -691,36 +703,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           password: u.password,
           customPermissions: u.custom_permissions ? (typeof u.custom_permissions === 'string' ? JSON.parse(u.custom_permissions) : u.custom_permissions) : u.customPermissions
         }));
-        setUsers(prev => {
-          const userMap = new Map<string, UserAccount>();
-
-          // Preserve all existing local users first
-          prev.forEach(u => {
-            if (u && u.username) {
-              userMap.set(u.username.toLowerCase(), u);
-            }
-          });
-
-          // Merge or update with loaded users from Supabase
-          loadedUsers.forEach(lu => {
-            if (lu && lu.username) {
-              const existing = userMap.get(lu.username.toLowerCase());
-              userMap.set(lu.username.toLowerCase(), {
-                ...existing,
-                ...lu,
-                password: lu.password || existing?.password,
-                customPermissions: lu.customPermissions || existing?.customPermissions
-              });
-            }
-          });
-
-          const next = Array.from(userMap.values());
-          const finalUsers = next.length > 0 ? next : INITIAL_USERS;
-          if (typeof window !== "undefined") {
-            localStorage.setItem("RizStock_Users", JSON.stringify(finalUsers));
-          }
-          return finalUsers;
-        });
+        const finalUsers = loadedUsers.length > 0 ? loadedUsers : INITIAL_USERS;
+        setUsers(finalUsers);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_Users", JSON.stringify(finalUsers));
+        }
       }
 
       if (dbLogs) {
