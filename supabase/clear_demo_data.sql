@@ -6,6 +6,9 @@
 -- 2. Les paramètres d'entreprise
 -- 3. Votre compte Administrateur Principal ('mbagnickdiallo')
 
+-- 0. S'ASSURER QUE LA COLONNE PASSWORD EXISTE DANS USER_ACCOUNTS
+ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS password TEXT;
+
 -- 1. VIDER LES TRANSACTIONS COMMERCIALES ET MOUVEMENTS
 DELETE FROM sale_items;
 DELETE FROM sales;

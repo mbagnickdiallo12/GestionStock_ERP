@@ -240,6 +240,7 @@ CREATE TABLE IF NOT EXISTS user_accounts (
   depot TEXT DEFAULT 'Tous',
   last_login TIMESTAMPTZ,
   status TEXT DEFAULT 'Actif',
+  password TEXT,
   custom_permissions JSONB DEFAULT '[]'::jsonb
 );
 
