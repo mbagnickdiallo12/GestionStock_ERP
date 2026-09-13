@@ -1214,23 +1214,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     for (const item of cart) {
-      const remainingQty = (stocks[depotIdToDeduct] && stocks[depotIdToDeduct][item.productId]) || 0;
-      const newQty = Math.max(0, remainingQty - item.qty);
+      const matchedProd = products.find(p => p.id === item.productId || p.title.toLowerCase() === item.title.toLowerCase());
+      const targetProdId = matchedProd ? matchedProd.id : item.productId;
+      const targetProdTitle = matchedProd ? matchedProd.title : item.title;
 
-      await supabase.from('depot_stocks').upsert({
-        depot_id: depotIdToDeduct,
-        product_id: item.productId,
-        quantity: newQty
-      }, { onConflict: 'depot_id,product_id' });
+      // Direct real-time fetch of exact stock row from Supabase
+      const { data: currentStockRow } = await supabase
+        .from('depot_stocks')
+        .select('id, quantity')
+        .eq('depot_id', depotIdToDeduct)
+        .eq('product_id', targetProdId)
+        .maybeSingle();
 
-      // Auto-log stock movement for audit history
+      const currentQty = currentStockRow ? Number(currentStockRow.quantity) : ((stocks[depotIdToDeduct] && stocks[depotIdToDeduct][targetProdId]) || 0);
+      const newQty = Math.max(0, currentQty - item.qty);
+
+      if (currentStockRow) {
+        await supabase
+          .from('depot_stocks')
+          .update({ quantity: newQty, updated_at: new Date().toISOString() })
+          .eq('id', currentStockRow.id);
+      } else {
+        await supabase
+          .from('depot_stocks')
+          .insert({
+            depot_id: depotIdToDeduct,
+            product_id: targetProdId,
+            quantity: newQty,
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      // Auto-log stock movement for audit history with exact product title
       const mvtRef = `MVT-${Math.floor(1000 + Math.random() * 9000)}`;
       const mvtDate = new Date().toISOString().slice(0, 16).replace("T", " ");
       const mvtObj: StockMovement = {
         ref: mvtRef,
         date: mvtDate,
         type: 'SORTIE',
-        prodTitle: item.title,
+        prodTitle: targetProdTitle,
         source: targetDepot?.name || 'Dépôt Vendeur',
         dest: `Vente Facture ${invoiceNum} (${clientName || 'Client Comptoir'})`,
         qty: item.qty,
@@ -1248,7 +1270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await supabase.from('stock_movements').insert({
         ref: mvtRef,
         type: 'SORTIE',
-        product_title: item.title,
+        product_title: targetProdTitle,
         source: targetDepot?.name || 'Dépôt Vendeur',
         dest: `Vente Facture ${invoiceNum} (${clientName || 'Client Comptoir'})`,
         quantity: item.qty,
@@ -1280,13 +1302,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     if (cart.length > 0) {
-      const saleItemsPayload = cart.map(item => ({
-        sale_id: invoiceNum,
-        product_id: item.productId,
-        product_title: item.title,
-        quantity: item.qty,
-        unit_price: item.price
-      }));
+      const saleItemsPayload = cart.map(item => {
+        const matchedProd = products.find(p => p.id === item.productId || p.title.toLowerCase() === item.title.toLowerCase());
+        return {
+          sale_id: invoiceNum,
+          product_id: matchedProd ? matchedProd.id : item.productId,
+          product_title: matchedProd ? matchedProd.title : item.title,
+          quantity: item.qty,
+          unit_price: item.price
+        };
+      });
       const { error: saleItemsErr } = await supabase.from('sale_items').insert(saleItemsPayload);
       if (saleItemsErr) {
         console.error("Supabase sale_items insert error:", saleItemsErr);
@@ -2451,15 +2476,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const depObj = depots.find(d => d.id === mvtData.depotId) ||
                    depots.find(d => d.name === mvtData.source || d.name === mvtData.dest) ||
                    depots[0];
-    const prodObj = products.find(p => p.id === mvtData.productId || p.title === mvtData.prodTitle) || products[0];
+    const prodObj = products.find(p => p.id === mvtData.productId || p.title.toLowerCase() === mvtData.prodTitle.toLowerCase()) || products[0];
 
     if (depObj && prodObj) {
       const depId = depObj.id;
       const prodId = prodObj.id;
-      const current = (stocks[depId] && stocks[depId][prodId]) || 0;
 
+      // 1. Direct fetch from Supabase to guarantee 100% database accuracy
+      const { data: stockRow } = await supabase
+        .from('depot_stocks')
+        .select('id, quantity')
+        .eq('depot_id', depId)
+        .eq('product_id', prodId)
+        .maybeSingle();
+
+      const current = stockRow ? Number(stockRow.quantity) : ((stocks[depId] && stocks[depId][prodId]) || 0);
       const isEntry = mvtData.type === 'ENTREE';
       const newQty = isEntry ? current + mvtData.qty : Math.max(0, current - mvtData.qty);
+
+      if (stockRow) {
+        await supabase
+          .from('depot_stocks')
+          .update({ quantity: newQty, updated_at: new Date().toISOString() })
+          .eq('id', stockRow.id);
+      } else {
+        await supabase
+          .from('depot_stocks')
+          .insert({
+            depot_id: depId,
+            product_id: prodId,
+            quantity: newQty,
+            updated_at: new Date().toISOString()
+          });
+      }
 
       setStocks(prev => {
         const updated = { ...prev };
@@ -2468,39 +2517,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem("RizStock_Stocks", JSON.stringify(updated));
         return updated;
       });
-
-      // 1. Ensure depot exists in Supabase depots table FIRST!
-      await supabase.from('depots').upsert({
-        id: depObj.id,
-        name: depObj.name,
-        city: depObj.city,
-        capacity: depObj.capacity,
-        manager_name: depObj.manager,
-        phone: depObj.phone,
-        status: depObj.status
-      });
-
-      // 2. Ensure product exists in Supabase products table FIRST!
-      await supabase.from('products').upsert({
-        id: prodObj.id,
-        code: prodObj.code,
-        title: prodObj.title,
-        category: prodObj.category,
-        weight: prodObj.weight,
-        buy_price: prodObj.buyPrice,
-        sell_price: prodObj.sellPrice,
-        alert_threshold: prodObj.alertThreshold,
-        image_url: prodObj.imageUrl
-      });
-
-      // 3. UPSERT QUANTITY TO SUPABASE depot_stocks TABLE!
-      const { error: stockErr } = await supabase.from('depot_stocks').upsert({
-        depot_id: depId,
-        product_id: prodId,
-        quantity: newQty
-      }, { onConflict: 'depot_id,product_id' });
-
-      if (stockErr) console.error("Supabase depot_stocks upsert error:", stockErr);
     }
 
     const { error } = await supabase.from('stock_movements').insert({
@@ -2527,9 +2543,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    const newSrcQty = Math.max(0, avail - qty);
-    const currentDest = (stocks[destId] && stocks[destId][prodId]) || 0;
-    const newDestQty = currentDest + qty;
+    // Direct real-time fetch from Supabase
+    const { data: srcRow } = await supabase
+      .from('depot_stocks')
+      .select('id, quantity')
+      .eq('depot_id', srcId)
+      .eq('product_id', prodId)
+      .maybeSingle();
+
+    const { data: destRow } = await supabase
+      .from('depot_stocks')
+      .select('id, quantity')
+      .eq('depot_id', destId)
+      .eq('product_id', prodId)
+      .maybeSingle();
+
+    const srcCurrent = srcRow ? Number(srcRow.quantity) : ((stocks[srcId] && stocks[srcId][prodId]) || 0);
+    const destCurrent = destRow ? Number(destRow.quantity) : ((stocks[destId] && stocks[destId][prodId]) || 0);
+
+    const newSrcQty = Math.max(0, srcCurrent - qty);
+    const newDestQty = destCurrent + qty;
+
+    if (srcRow) {
+      await supabase.from('depot_stocks').update({ quantity: newSrcQty, updated_at: new Date().toISOString() }).eq('id', srcRow.id);
+    } else {
+      await supabase.from('depot_stocks').insert({ depot_id: srcId, product_id: prodId, quantity: newSrcQty });
+    }
+
+    if (destRow) {
+      await supabase.from('depot_stocks').update({ quantity: newDestQty, updated_at: new Date().toISOString() }).eq('id', destRow.id);
+    } else {
+      await supabase.from('depot_stocks').insert({ depot_id: destId, product_id: prodId, quantity: newDestQty });
+    }
 
     setStocks(prev => {
       const updated = { ...prev };
@@ -2540,11 +2585,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem("RizStock_Stocks", JSON.stringify(updated));
       return updated;
     });
-
-    await supabase.from('depot_stocks').upsert([
-      { depot_id: srcId, product_id: prodId, quantity: newSrcQty },
-      { depot_id: destId, product_id: prodId, quantity: newDestQty }
-    ]);
 
     const prod = products.find(p => p.id === prodId);
     const srcDep = depots.find(d => d.id === srcId);

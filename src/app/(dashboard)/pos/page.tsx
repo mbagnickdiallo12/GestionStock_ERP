@@ -34,7 +34,13 @@ export default function POSPage() {
   }
 
   const openSession = cashSessions.find(s => s.status === "Ouverte");
-  const activeDepotObj = depots.find(d => isMatchingDepot(d.id, activeDepotId, depots));
+  const activeDepotObj = depots.find(d => isMatchingDepot(d.id, activeDepotId, depots)) || depots[0];
+
+  React.useEffect(() => {
+    if (activeDepotId === "all" && depots.length > 0) {
+      setActiveDepotId(depots[0].id);
+    }
+  }, [depots, activeDepotId, setActiveDepotId]);
 
   const handleCheckout = async () => {
     if (isSubmitting) return;
@@ -372,6 +378,10 @@ export default function POSPage() {
 
           {/* Cart Summary & Validation */}
           <div className="bg-black/20 p-4 rounded-xl space-y-3 border border-white/5">
+            <div className="flex justify-between text-xs text-slate-400">
+              <span>Dépôt vendeur (débité) :</span>
+              <strong className="text-emerald-400 font-bold">{activeDepotObj?.name || "Dépôt Principal"}</strong>
+            </div>
             <div className="flex justify-between text-xs text-slate-400">
               <span>Nombre de sacs total:</span>
               <strong className="text-white">{formatNumber(totalBags)} Sacs</strong>
