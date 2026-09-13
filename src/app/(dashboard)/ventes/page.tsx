@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Search, FileText, CheckCircle, Clock, Truck } from "lucide-react";
+import { Plus, Search, FileText, CheckCircle, Clock, Truck, Package } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
@@ -10,7 +10,7 @@ import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 
 export default function VentesPage() {
-  const { sales, depots, openModal, isLoading } = useApp();
+  const { sales, depots, openModal, isLoading, movements } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -125,6 +125,7 @@ export default function VentesPage() {
                 <th className="p-3">N° Facture</th>
                 <th className="p-3">Date</th>
                 <th className="p-3">Client</th>
+                <th className="p-3">Produit(s) Vendu(s)</th>
                 <th className="p-3">Dépôt Expéditeur</th>
                 <th className="p-3 text-right">Volume (Sacs)</th>
                 <th className="p-3 text-right">Montant Total</th>
@@ -136,7 +137,16 @@ export default function VentesPage() {
             <tbody className="divide-y divide-white/5">
               {paginatedSales.length > 0 ? (
                 paginatedSales.map(s => {
-                  const totalBags = s.items.reduce((sum, i) => sum + i.qty, 0);
+                  const displayItems = s.items && s.items.length > 0 ? s.items : (() => {
+                    const matchedMvt = movements.find(m => m.dest && m.dest.includes(s.id));
+                    if (matchedMvt) {
+                      return [{ productId: 'mvt', title: matchedMvt.prodTitle, qty: matchedMvt.qty, price: 0 }];
+                    }
+                    return [];
+                  })();
+                  const totalBags = displayItems.length > 0 
+                    ? displayItems.reduce((sum, i) => sum + i.qty, 0)
+                    : s.items.reduce((sum, i) => sum + i.qty, 0);
                   const depot = depots.find(d => d.id === s.depotId);
 
                   return (
@@ -144,6 +154,25 @@ export default function VentesPage() {
                       <td className="p-3 font-bold text-white">{s.id}</td>
                       <td className="p-3 text-slate-400">{s.date}</td>
                       <td className="p-3 font-semibold text-white">{s.clientName}</td>
+                      <td className="p-3">
+                        {displayItems.length > 0 ? (
+                          <div className="flex flex-col gap-1 max-w-[260px]">
+                            {displayItems.map((item, idx) => (
+                              <span 
+                                key={idx} 
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg w-max"
+                              >
+                                <span className="bg-emerald-500/25 text-emerald-300 px-1.5 py-0.2 rounded text-[11px] font-bold">
+                                  {item.qty} sacs
+                                </span>
+                                <span className="truncate max-w-[160px] font-medium text-slate-200">{item.title}</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500 italic">Marchandise Riz</span>
+                        )}
+                      </td>
                       <td className="p-3 text-slate-300">{depot ? depot.name : s.depotId}</td>
                       <td className="p-3 text-right text-slate-300 font-bold">{formatNumber(totalBags)} Sacs</td>
                       <td className="p-3 text-right font-black text-emerald-400">{formatFCFA(s.totalAmount)}</td>
