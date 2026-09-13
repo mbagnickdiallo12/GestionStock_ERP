@@ -15,6 +15,7 @@ export default function POSPage() {
   const [catFilter, setCatFilter] = useState("all");
   const [selectedClient, setSelectedClient] = useState("passant");
   const [paymentMode, setPaymentMode] = useState<Sale['paymentMode']>("Espece");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isLoading) {
     return (
@@ -35,13 +36,23 @@ export default function POSPage() {
   const openSession = cashSessions.find(s => s.status === "Ouverte");
   const activeDepotObj = depots.find(d => isMatchingDepot(d.id, activeDepotId, depots));
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (isSubmitting) return;
+    if (cart.length === 0) {
+      showToast("Le panier est vide. Veuillez sélectionner des produits.", "error");
+      return;
+    }
     if (!openSession) {
       showToast("Attention : La caisse est actuellement clôturée. Veuillez d'abord ouvrir la caisse enregistreuse.", "warning");
       openModal("modal-cash-audit");
       return;
     }
-    processCheckout(selectedClient, paymentMode);
+    try {
+      setIsSubmitting(true);
+      await processCheckout(selectedClient, paymentMode);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredProducts = products.filter(p => {
@@ -391,9 +402,23 @@ export default function POSPage() {
 
             <button
               onClick={handleCheckout}
-              className="w-full bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-extrabold text-sm py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40 transition-all hover:-translate-y-0.5 mt-2 cursor-pointer"
+              disabled={isSubmitting || cart.length === 0}
+              className={`w-full text-white font-extrabold text-sm py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all mt-2 ${
+                isSubmitting || cart.length === 0
+                  ? "bg-slate-700/60 opacity-60 cursor-not-allowed text-slate-300"
+                  : "bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 shadow-emerald-900/40 hover:-translate-y-0.5 cursor-pointer"
+              }`}
             >
-              <CheckCircle2 className="w-5 h-5" /> Valider & Imprimer Facture
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Enregistrement en cours...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5" /> Valider & Imprimer Facture
+                </>
+              )}
             </button>
           </div>
         </div>

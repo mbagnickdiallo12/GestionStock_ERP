@@ -37,7 +37,7 @@ export const DeliveryNoteModal: React.FC = () => {
 
   const deliveryItems = targetSale ? targetSale.items : [{
     productId: "prod-mvt",
-    title: targetMvt?.prodTitle || "Royal Sénégal 100% Brisure (Sac 25kg)",
+    title: targetMvt?.prodTitle || "Marchandise Riz",
     qty: targetMvt?.qty || 500,
     price: 0
   }];

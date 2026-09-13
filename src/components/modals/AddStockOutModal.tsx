@@ -15,6 +15,7 @@ export const AddStockOutModal: React.FC = () => {
   const [qty, setQty] = useState(100);
   const [dest, setDest] = useState("Livraison Client Grossiste");
   const [operator, setOperator] = useState("Chauffeur Transporteur");
+  const [customDate, setCustomDate] = useState(() => new Date().toISOString().slice(0, 16));
 
   useEffect(() => {
     if (depots.length > 0 && !depotId) {
@@ -23,7 +24,10 @@ export const AddStockOutModal: React.FC = () => {
     if (products.length > 0 && !productId) {
       setProductId(products[0].id);
     }
-  }, [depots, products, depotId, productId]);
+    if (!customDate) {
+      setCustomDate(new Date().toISOString().slice(0, 16));
+    }
+  }, [depots, products, depotId, productId, customDate]);
 
   if (!isOpen) return null;
 
@@ -46,7 +50,8 @@ export const AddStockOutModal: React.FC = () => {
       source: selectedDepot.name,
       dest: dest || "Client / Destination",
       qty: qty,
-      operator: operator || "Opérateur"
+      operator: operator || "Opérateur",
+      customDate: customDate || new Date().toISOString().slice(0, 16)
     });
   };
 
@@ -97,6 +102,18 @@ export const AddStockOutModal: React.FC = () => {
         </div>
 
         <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">
+            Date & Heure de la Sortie <span className="text-amber-400 font-normal">(modifiable)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={customDate}
+            onChange={(e) => setCustomDate(e.target.value)}
+            className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer font-mono"
+          />
+        </div>
+
+        <div>
           <label className="text-xs font-semibold text-slate-400 block mb-1">Destinataire / Client / Motif</label>
           <input
             type="text"
@@ -108,7 +125,7 @@ export const AddStockOutModal: React.FC = () => {
           />
         </div>
 
-        <div className="sm:col-span-2">
+        <div>
           <label className="text-xs font-semibold text-slate-400 block mb-1">Opérateur / Chauffeur Responsable</label>
           <input
             type="text"

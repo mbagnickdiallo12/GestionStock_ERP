@@ -14,6 +14,7 @@ export const AddStockInModal: React.FC = () => {
   const [qty, setQty] = useState(500);
   const [source, setSource] = useState("Arrivage Conteneur Port");
   const [operator, setOperator] = useState("Magasinier Dépôt");
+  const [customDate, setCustomDate] = useState(() => new Date().toISOString().slice(0, 16));
 
   useEffect(() => {
     if (depots.length > 0 && !depotId) {
@@ -22,7 +23,10 @@ export const AddStockInModal: React.FC = () => {
     if (products.length > 0 && !productId) {
       setProductId(products[0].id);
     }
-  }, [depots, products, depotId, productId]);
+    if (!customDate) {
+      setCustomDate(new Date().toISOString().slice(0, 16));
+    }
+  }, [depots, products, depotId, productId, customDate]);
 
   if (!isOpen) return null;
 
@@ -43,7 +47,8 @@ export const AddStockInModal: React.FC = () => {
       source: source || "Fournisseur / Port",
       dest: selectedDepot.name,
       qty: qty,
-      operator: operator || "Magasinier Dépôt"
+      operator: operator || "Magasinier Dépôt",
+      customDate: customDate || new Date().toISOString().slice(0, 16)
     });
   };
 
@@ -86,6 +91,19 @@ export const AddStockInModal: React.FC = () => {
         </div>
 
         <div>
+          <label className="text-xs font-semibold text-slate-400 block mb-1">
+            Date & Heure de l'Entrée <span className="text-emerald-400 font-normal">(modifiable)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={customDate}
+            onChange={(e) => setCustomDate(e.target.value)}
+            className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer font-mono"
+            title="Vous pouvez choisir une date antérieure pour enregistrer une rentrée passée"
+          />
+        </div>
+
+        <div>
           <label className="text-xs font-semibold text-slate-400 block mb-1">Provenance / Origine Chargement</label>
           <input
             type="text"
@@ -97,7 +115,7 @@ export const AddStockInModal: React.FC = () => {
           />
         </div>
 
-        <div className="sm:col-span-2">
+        <div>
           <label className="text-xs font-semibold text-slate-400 block mb-1">Opérateur / Magasinier Responsable</label>
           <input
             type="text"

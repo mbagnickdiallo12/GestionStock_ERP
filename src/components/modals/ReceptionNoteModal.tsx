@@ -126,7 +126,7 @@ export const ReceptionNoteModal: React.FC = () => {
                   </td>
                   <td className="py-2.5 px-2 align-top">
                     <div className="font-bold text-slate-900 text-xs sm:text-sm">
-                      {targetPurchase?.productTitle || targetMvt?.prodTitle || "Royal Sénégal 100% Brisure (Sac 25kg)"}
+                      {targetPurchase?.productTitle || targetMvt?.prodTitle || "Marchandise Riz"}
                     </div>
                     <div className="text-slate-500 text-[10px] mt-0.5">
                       Conteneur 40ft dépoté • Contrôle qualité sac scellé sans avarie

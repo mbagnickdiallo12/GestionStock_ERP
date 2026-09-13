@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Expense } from "@/types";
 import { formatFCFA, formatNumber, canCreate, isMatchingDepot } from "@/lib/utils";
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function DepensesPage() {
   const { expenses, depots, activeDepotId, addExpense, openModal, closeModal, currentUser, isLoading } = useApp();
@@ -14,6 +15,9 @@ export default function DepensesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const [depotFilter, setDepotFilter] = useState(activeDepotId);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Sync depotFilter when activeDepotId changes from the global header
   useEffect(() => {
@@ -69,6 +73,15 @@ export default function DepensesPage() {
     const matchDepot = isMatchingDepot(e.depotId, depotFilter, depots);
     return matchSearch && matchCat && matchDepot;
   });
+
+  const sortedExpenses = [...filteredExpenses].sort((a, b) => {
+    const tA = new Date(a.date || "").getTime() || 0;
+    const tB = new Date(b.date || "").getTime() || 0;
+    return tB - tA;
+  });
+
+  const totalPages = Math.ceil(sortedExpenses.length / itemsPerPage);
+  const paginatedExpenses = sortedExpenses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Calculate dynamic stats based on selected depot / filter
   const totalExpensesAmount = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -248,8 +261,8 @@ export default function DepensesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredExpenses.length > 0 ? (
-                filteredExpenses.map(e => {
+              {paginatedExpenses.length > 0 ? (
+                paginatedExpenses.map(e => {
                   const depot = depots.find(d => isMatchingDepot(e.depotId, d.id, depots));
                   return (
                     <tr key={e.id} className="hover:bg-white/5 transition-colors">
@@ -284,6 +297,20 @@ export default function DepensesPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Numbered Pagination with Arrows */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedExpenses.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newPerPage) => {
+            setItemsPerPage(newPerPage);
+            setCurrentPage(1);
+          }}
+          itemName="dépenses"
+        />
       </div>
 
       {/* Add Expense Modal */}

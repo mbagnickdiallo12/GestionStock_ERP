@@ -7,6 +7,7 @@ import { formatNumber, canCreate } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function StocksPage() {
   const { movements, depots, products, stocks, openModal, isLoading, currentUser } = useApp();
@@ -16,6 +17,9 @@ export default function StocksPage() {
   const [preset, setPreset] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   if (isLoading) {
     return (
@@ -43,6 +47,16 @@ export default function StocksPage() {
 
     return matchSearch && matchType && matchStart && matchEnd;
   });
+
+  // Explicitly sort movements: NEWEST FIRST (plus récent au plus ancien)
+  const sortedMovements = [...filteredMovements].sort((a, b) => {
+    const tA = new Date(a.date || "").getTime() || 0;
+    const tB = new Date(b.date || "").getTime() || 0;
+    return tB - tA;
+  });
+
+  const totalPages = Math.ceil(sortedMovements.length / itemsPerPage);
+  const paginatedMovements = sortedMovements.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -159,7 +173,15 @@ export default function StocksPage() {
 
       {/* Movements Table */}
       <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden">
-        <span className="font-extrabold text-base text-white block mb-4">Historique des Entrées, Sorties & Transferts ({filteredMovements.length})</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <span className="font-extrabold text-base text-white">
+            Historique des Entrées, Sorties & Transferts ({sortedMovements.length})
+          </span>
+          <span className="text-xs text-slate-400 font-medium">
+            Classé par ordre chronologique (du plus récent au plus ancien)
+          </span>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -175,43 +197,65 @@ export default function StocksPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredMovements.map(m => (
-                <tr key={m.ref} className="hover:bg-white/5 transition-colors">
-                  <td className="p-3 font-bold text-white">{m.ref}</td>
-                  <td className="p-3 text-slate-400 text-xs font-mono">{m.date}</td>
-                  <td className="p-3">
-                    {m.type === 'ENTREE' && <span className="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><ArrowDownLeft className="w-3.5 h-3.5" /> Entrée</span>}
-                    {m.type === 'SORTIE' && <span className="bg-red-500/15 text-red-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><ArrowUpRight className="w-3.5 h-3.5" /> Sortie</span>}
-                    {m.type === 'TRANSFERT' && <span className="bg-blue-500/15 text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><ArrowRightLeft className="w-3.5 h-3.5" /> Transfert</span>}
-                  </td>
-                  <td className="p-3 font-semibold text-white">{m.prodTitle}</td>
-                  <td className="p-3 text-slate-300">{m.source} → {m.dest}</td>
-                  <td className="p-3 text-right font-black text-white">{formatNumber(m.qty)}</td>
-                  <td className="p-3 text-slate-400">{m.operator}</td>
-                  <td className="p-3 text-right">
-                    {m.type === 'ENTREE' ? (
-                      <button
-                        onClick={() => openModal(`br-${m.ref}`)}
-                        className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Imprimer le Bon de Réception (BR)"
-                      >
-                        <FileCheck className="w-3.5 h-3.5" /> Bon BR
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => openModal(`bl-${m.ref}`)}
-                        className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Imprimer le Bon de Livraison (BL)"
-                      >
-                        <FileText className="w-3.5 h-3.5" /> Bon BL
-                      </button>
-                    )}
+              {paginatedMovements.length > 0 ? (
+                paginatedMovements.map(m => (
+                  <tr key={m.ref} className="hover:bg-white/5 transition-colors">
+                    <td className="p-3 font-bold text-white">{m.ref}</td>
+                    <td className="p-3 text-slate-400 text-xs font-mono">{m.date}</td>
+                    <td className="p-3">
+                      {m.type === 'ENTREE' && <span className="bg-emerald-500/15 text-emerald-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><ArrowDownLeft className="w-3.5 h-3.5" /> Entrée</span>}
+                      {m.type === 'SORTIE' && <span className="bg-red-500/15 text-red-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><ArrowUpRight className="w-3.5 h-3.5" /> Sortie</span>}
+                      {m.type === 'TRANSFERT' && <span className="bg-blue-500/15 text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><ArrowRightLeft className="w-3.5 h-3.5" /> Transfert</span>}
+                    </td>
+                    <td className="p-3 font-semibold text-white">{m.prodTitle}</td>
+                    <td className="p-3 text-slate-300">{m.source} → {m.dest}</td>
+                    <td className="p-3 text-right font-black text-white">{formatNumber(m.qty)}</td>
+                    <td className="p-3 text-slate-400">{m.operator}</td>
+                    <td className="p-3 text-right">
+                      {m.type === 'ENTREE' ? (
+                        <button
+                          onClick={() => openModal(`br-${m.ref}`)}
+                          className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Imprimer le Bon de Réception (BR)"
+                        >
+                          <FileCheck className="w-3.5 h-3.5" /> Bon BR
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => openModal(`bl-${m.ref}`)}
+                          className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Imprimer le Bon de Livraison (BL)"
+                        >
+                          <FileText className="w-3.5 h-3.5" /> Bon BL
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-slate-400">
+                    Aucun mouvement trouvé pour cette sélection.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Numbered Pagination with Arrows */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedMovements.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newPerPage) => {
+            setItemsPerPage(newPerPage);
+            setCurrentPage(1);
+          }}
+          itemName="mouvements"
+        />
       </div>
     </div>
   );

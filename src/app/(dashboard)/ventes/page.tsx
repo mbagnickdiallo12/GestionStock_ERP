@@ -7,6 +7,7 @@ import { formatFCFA, formatNumber } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function VentesPage() {
   const { sales, depots, openModal, isLoading } = useApp();
@@ -17,6 +18,9 @@ export default function VentesPage() {
   const [preset, setPreset] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   if (isLoading) {
     return (
@@ -47,6 +51,15 @@ export default function VentesPage() {
 
     return matchSearch && matchPayment && matchStart && matchEnd;
   });
+
+  const sortedSales = [...filteredSales].sort((a, b) => {
+    const tA = new Date(a.date || "").getTime() || 0;
+    const tB = new Date(b.date || "").getTime() || 0;
+    return tB - tA;
+  });
+
+  const totalPages = Math.ceil(sortedSales.length / itemsPerPage);
+  const paginatedSales = sortedSales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -121,50 +134,72 @@ export default function VentesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredSales.map(s => {
-                const totalBags = s.items.reduce((sum, i) => sum + i.qty, 0);
-                const depot = depots.find(d => d.id === s.depotId);
+              {paginatedSales.length > 0 ? (
+                paginatedSales.map(s => {
+                  const totalBags = s.items.reduce((sum, i) => sum + i.qty, 0);
+                  const depot = depots.find(d => d.id === s.depotId);
 
-                return (
-                  <tr key={s.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-bold text-white">{s.id}</td>
-                    <td className="p-3 text-slate-400">{s.date}</td>
-                    <td className="p-3 font-semibold text-white">{s.clientName}</td>
-                    <td className="p-3 text-slate-300">{depot ? depot.name : s.depotId}</td>
-                    <td className="p-3 text-right text-slate-300 font-bold">{formatNumber(totalBags)} Sacs</td>
-                    <td className="p-3 text-right font-black text-emerald-400">{formatFCFA(s.totalAmount)}</td>
-                    <td className="p-3"><span className="bg-slate-700 text-slate-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">{s.paymentMode}</span></td>
-                    <td className="p-3">
-                      {s.status === 'Payé' ? (
-                        <span className="bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Payé</span>
-                      ) : (
-                        <span className="bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> En attente</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button 
-                          onClick={() => openModal(`invoice-${s.id}`)}
-                          className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Imprimer la Facture de Vente"
-                        >
-                          <FileText className="w-3.5 h-3.5" /> Facture
-                        </button>
-                        <button 
-                          onClick={() => openModal(`bl-${s.id}`)}
-                          className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Imprimer le Bon de Livraison (BL)"
-                        >
-                          <Truck className="w-3.5 h-3.5" /> Bon BL
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={s.id} className="hover:bg-white/5 transition-colors">
+                      <td className="p-3 font-bold text-white">{s.id}</td>
+                      <td className="p-3 text-slate-400">{s.date}</td>
+                      <td className="p-3 font-semibold text-white">{s.clientName}</td>
+                      <td className="p-3 text-slate-300">{depot ? depot.name : s.depotId}</td>
+                      <td className="p-3 text-right text-slate-300 font-bold">{formatNumber(totalBags)} Sacs</td>
+                      <td className="p-3 text-right font-black text-emerald-400">{formatFCFA(s.totalAmount)}</td>
+                      <td className="p-3"><span className="bg-slate-700 text-slate-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">{s.paymentMode}</span></td>
+                      <td className="p-3">
+                        {s.status === 'Payé' ? (
+                          <span className="bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Payé</span>
+                        ) : (
+                          <span className="bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> En attente</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button 
+                            onClick={() => openModal(`invoice-${s.id}`)}
+                            className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Imprimer la Facture de Vente"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> Facture
+                          </button>
+                          <button 
+                            onClick={() => openModal(`bl-${s.id}`)}
+                            className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Imprimer le Bon de Livraison (BL)"
+                          >
+                            <Truck className="w-3.5 h-3.5" /> Bon BL
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={9} className="p-8 text-center text-slate-400">
+                    Aucune vente enregistrée pour cette sélection.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Numbered Pagination with Arrows */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedSales.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newPerPage) => {
+            setItemsPerPage(newPerPage);
+            setCurrentPage(1);
+          }}
+          itemName="factures de vente"
+        />
       </div>
     </div>
   );

@@ -7,13 +7,17 @@ import { formatNumber } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable } from "@/components/ui/Skeleton";
+import { Pagination } from "@/components/ui/Pagination";
 
 export default function ActivitesPage() {
-  const { auditLogs, clearAuditLogs, askConfirm, showToast, isLoading } = useApp();
+  const { auditLogs, clearAuditLogs, askConfirm, showToast, isLoading, users } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [userFilter, setUserFilter] = useState("all");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
 
   if (isLoading) {
     return (
@@ -46,6 +50,15 @@ export default function ActivitesPage() {
 
     return matchSearch && matchAction && matchUser && matchStart && matchEnd;
   });
+
+  const sortedLogs = [...filteredLogs].sort((a, b) => {
+    const tA = new Date(a.timestamp || "").getTime() || 0;
+    const tB = new Date(b.timestamp || "").getTime() || 0;
+    return tB - tA;
+  });
+
+  const totalPages = Math.ceil(sortedLogs.length / itemsPerPage);
+  const paginatedLogs = sortedLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,ID,Date,Utilisateur,Role,Action,Description,Depot,IP\n";
@@ -190,10 +203,9 @@ export default function ActivitesPage() {
             className="bg-[#0f172a] border border-white/15 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none cursor-pointer"
           >
             <option value="all">Tous les Utilisateurs</option>
-            <option value="moustapha">Moustapha Ndiaye (Admin)</option>
-            <option value="ousmane">Ousmane Ba (Gérant)</option>
-            <option value="awa">Awa Diop (Caissière)</option>
-            <option value="fatou">Fatou Sall (Comptable)</option>
+            {users.map(u => (
+              <option key={u.username} value={u.name}>{u.name} ({u.role.toUpperCase()})</option>
+            ))}
           </select>
         </div>
       </div>
@@ -201,7 +213,7 @@ export default function ActivitesPage() {
       {/* Audit Trail Table */}
       <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden">
         <span className="font-extrabold text-base text-white block mb-4 flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-emerald-400" /> Registre d'Audit & Traçabilité Métier
+          <Terminal className="w-4 h-4 text-emerald-400" /> Registre d'Audit & Traçabilité Métier ({sortedLogs.length})
         </span>
 
         <div className="overflow-x-auto">
@@ -218,35 +230,57 @@ export default function ActivitesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredLogs.map(log => (
-                <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                  <td className="p-3 font-mono font-bold text-slate-400 text-xs">{log.id}</td>
-                  <td className="p-3 text-slate-300 font-medium text-xs flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {log.timestamp}
+              {paginatedLogs.length > 0 ? (
+                paginatedLogs.map(log => (
+                  <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                    <td className="p-3 font-mono font-bold text-slate-400 text-xs">{log.id}</td>
+                    <td className="p-3 text-slate-300 font-medium text-xs flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" /> {log.timestamp}
+                    </td>
+                    <td className="p-3">
+                      <div className="font-bold text-white text-xs">{log.user}</div>
+                      <span className="text-[10px] text-blue-400 uppercase font-semibold">{log.role}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        log.action === 'VENTE' ? 'bg-emerald-500/15 text-emerald-400' :
+                        log.action === 'STOCK' ? 'bg-amber-500/15 text-amber-400' :
+                        log.action === 'CREANCE' ? 'bg-blue-500/15 text-blue-400' :
+                        log.action === 'PAIE' ? 'bg-purple-500/15 text-purple-400' :
+                        log.action === 'UTILISATEUR' ? 'bg-red-500/15 text-red-400' : 'bg-slate-700 text-slate-200'
+                      }`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="p-3 text-slate-200 font-semibold text-xs max-w-md">{log.description}</td>
+                    <td className="p-3 text-slate-300 text-xs">{log.depotName}</td>
+                    <td className="p-3 font-mono text-slate-500 text-xs">{log.ipAddress}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400">
+                    Aucune action d'audit trouvée pour cette sélection.
                   </td>
-                  <td className="p-3">
-                    <div className="font-bold text-white text-xs">{log.user}</div>
-                    <span className="text-[10px] text-blue-400 uppercase font-semibold">{log.role}</span>
-                  </td>
-                  <td className="p-3">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      log.action === 'VENTE' ? 'bg-emerald-500/15 text-emerald-400' :
-                      log.action === 'STOCK' ? 'bg-amber-500/15 text-amber-400' :
-                      log.action === 'CREANCE' ? 'bg-blue-500/15 text-blue-400' :
-                      log.action === 'PAIE' ? 'bg-purple-500/15 text-purple-400' :
-                      log.action === 'UTILISATEUR' ? 'bg-red-500/15 text-red-400' : 'bg-slate-700 text-slate-200'
-                    }`}>
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-200 font-semibold text-xs max-w-md">{log.description}</td>
-                  <td className="p-3 text-slate-300 text-xs">{log.depotName}</td>
-                  <td className="p-3 font-mono text-slate-500 text-xs">{log.ipAddress}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Numbered Pagination with Arrows */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedLogs.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newPerPage) => {
+            setItemsPerPage(newPerPage);
+            setCurrentPage(1);
+          }}
+          itemName="actions d'audit"
+        />
       </div>
     </div>
   );

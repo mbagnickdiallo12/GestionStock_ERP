@@ -124,7 +124,7 @@ interface AppContextType {
   loginUser: (username: string, password?: string) => Promise<{ success: boolean; message?: string }>;
   logoutUser: () => void;
 
-  addStockMovement: (mvt: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string }) => void;
+  addStockMovement: (mvt: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string; customDate?: string }) => void;
   transferStock: (srcId: string, destId: string, prodId: string, qty: number, truck: string) => void;
   addExpense: (exp: Omit<Expense, 'id' | 'date'>) => void;
 
@@ -402,15 +402,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supabase.from('suppliers').select('*'),
         supabase.from('clients').select('*'),
         supabase.from('employees').select('*'),
-        supabase.from('purchases').select('*'),
-        supabase.from('sales').select('*'),
-        supabase.from('expenses').select('*'),
-        supabase.from('stock_movements').select('*'),
-        supabase.from('debt_transactions').select('*'),
+        supabase.from('purchases').select('*').order('date', { ascending: false }),
+        supabase.from('sales').select('*').order('date', { ascending: false }),
+        supabase.from('expenses').select('*').order('date', { ascending: false }),
+        supabase.from('stock_movements').select('*').order('created_at', { ascending: false }),
+        supabase.from('debt_transactions').select('*').order('date', { ascending: false }),
         supabase.from('user_accounts').select('*'),
-        supabase.from('cash_sessions').select('*'),
-        supabase.from('audit_logs').select('*'),
-        supabase.from('inventory_sessions').select('*'),
+        supabase.from('cash_sessions').select('*').order('date', { ascending: false }),
+        supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }),
+        supabase.from('inventory_sessions').select('*').order('date', { ascending: false }),
         supabase.from('company_settings').select('*').order('updated_at', { ascending: false }),
         supabase.from('sale_items').select('*')
       ]);
@@ -561,16 +561,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (dbSales) {
-        setSales(dbSales.map(s => {
+        const loadedSales = dbSales.map(s => {
           let saleItems: SaleItem[] = [];
           if (dbSaleItems && dbSaleItems.length > 0) {
             const matched = dbSaleItems.filter(i => i.sale_id === s.id);
             if (matched.length > 0) {
               saleItems = matched.map(i => ({
-                productId: i.product_id || 'prod-1',
-                title: i.product_title || 'Royal Sénégal 100% Brisure (25kg)',
+                productId: i.product_id || (dbProducts?.[0]?.id || 'prod-1'),
+                title: i.product_title,
                 qty: Number(i.quantity || 1),
-                price: Number(i.unit_price || 15000)
+                price: Number(i.unit_price || 0)
               }));
             }
           }
@@ -583,15 +583,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
 
           if (saleItems.length === 0) {
-            const unitP = 15000;
-            const amt = Number(s.total_amount || 0);
-            const computedQty = Math.max(1, Math.round(amt / unitP));
-            saleItems = [{
-              productId: "prod-1",
-              title: "Royal Sénégal 100% Brisure (25kg)",
-              qty: computedQty,
-              price: unitP
-            }];
+            // Check if there is a matching stock movement for this sale to get exact real product!
+            const matchedMvt = dbMovements?.find(m => m.dest && m.dest.includes(s.id));
+            if (matchedMvt) {
+              const matchedProd = dbProducts?.find(p => p.title.toLowerCase() === matchedMvt.product_title.toLowerCase());
+              const pPrice = matchedProd ? Number(matchedProd.sell_price) : Math.round(Number(s.total_amount || 0) / Math.max(1, matchedMvt.quantity));
+              saleItems = [{
+                productId: matchedProd ? matchedProd.id : 'prod-mvt',
+                title: matchedMvt.product_title,
+                qty: matchedMvt.quantity,
+                price: pPrice
+              }];
+            } else {
+              const firstProd = dbProducts && dbProducts.length > 0 ? dbProducts[0] : null;
+              const unitP = firstProd ? Number(firstProd.sell_price) : 15000;
+              const amt = Number(s.total_amount || 0);
+              const computedQty = Math.max(1, Math.round(amt / (unitP || 15000)));
+              saleItems = [{
+                productId: firstProd ? firstProd.id : "prod-1",
+                title: firstProd ? firstProd.title : "Marchandise Riz",
+                qty: computedQty,
+                price: unitP
+              }];
+            }
           }
 
           return {
@@ -604,7 +618,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             paymentMode: s.payment_mode || 'Espece',
             status: s.status || 'Payé'
           };
-        }));
+        });
+        setSales(loadedSales);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_Sales", JSON.stringify(loadedSales));
+        }
       }
 
       if (dbExpenses) {
@@ -625,7 +643,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (dbMovements) {
-        setMovements(dbMovements.map(m => ({
+        const loadedMovements = dbMovements.map(m => ({
           ref: m.ref,
           date: m.created_at ? m.created_at.slice(0, 16).replace("T", " ") : new Date().toISOString().slice(0, 16).replace("T", " "),
           type: m.type,
@@ -634,7 +652,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           dest: m.dest,
           qty: m.quantity,
           operator: m.operator || 'Opérateur'
-        })));
+        }));
+        setMovements(loadedMovements);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_Movements", JSON.stringify(loadedMovements));
+        }
       }
 
       if (dbInventories) {
@@ -1171,7 +1193,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: paymentMode === "Credit" ? "En attente" : "Payé"
     };
 
-    setSales(prev => [newSale, ...prev]);
+    setSales(prev => {
+      const updated = [newSale, ...prev];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Sales", JSON.stringify(updated));
+      }
+      return updated;
+    });
 
     if (targetDepot) {
       await supabase.from('depots').upsert({
@@ -1197,6 +1225,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Auto-log stock movement for audit history
       const mvtRef = `MVT-${Math.floor(1000 + Math.random() * 9000)}`;
+      const mvtDate = new Date().toISOString().slice(0, 16).replace("T", " ");
+      const mvtObj: StockMovement = {
+        ref: mvtRef,
+        date: mvtDate,
+        type: 'SORTIE',
+        prodTitle: item.title,
+        source: targetDepot?.name || 'Dépôt Vendeur',
+        dest: `Vente Facture ${invoiceNum} (${clientName || 'Client Comptoir'})`,
+        qty: item.qty,
+        operator: activeUserObj ? activeUserObj.name : 'Caissier POS'
+      };
+
+      setMovements(prev => {
+        const updated = [mvtObj, ...prev.filter(m => m.ref !== mvtRef)];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_Movements", JSON.stringify(updated));
+        }
+        return updated;
+      });
+
       await supabase.from('stock_movements').insert({
         ref: mvtRef,
         type: 'SORTIE',
@@ -1237,10 +1285,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         product_id: item.productId,
         product_title: item.title,
         quantity: item.qty,
-        unit_price: item.price,
-        subtotal: item.price * item.qty
+        unit_price: item.price
       }));
-      await supabase.from('sale_items').insert(saleItemsPayload);
+      const { error: saleItemsErr } = await supabase.from('sale_items').insert(saleItemsPayload);
+      if (saleItemsErr) {
+        console.error("Supabase sale_items insert error:", saleItemsErr);
+      }
     }
 
     if (error) {
@@ -2385,12 +2435,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.location.href = "/login";
   };
 
-  const addStockMovement = async (mvtData: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string }) => {
+  const addStockMovement = async (mvtData: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string; customDate?: string }) => {
     const ref = `MVT-${Math.floor(1000 + Math.random() * 9000)}`;
-    const date = new Date().toISOString().slice(0, 16).replace("T", " ");
+    const date = mvtData.customDate ? mvtData.customDate.slice(0, 16).replace("T", " ") : new Date().toISOString().slice(0, 16).replace("T", " ");
     const newMvt: StockMovement = { ...mvtData, ref, date };
 
-    setMovements(prev => [newMvt, ...prev]);
+    setMovements(prev => {
+      const updated = [newMvt, ...prev];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Movements", JSON.stringify(updated));
+      }
+      return updated;
+    });
 
     const depObj = depots.find(d => d.id === mvtData.depotId) ||
                    depots.find(d => d.name === mvtData.source || d.name === mvtData.dest) ||
@@ -2454,7 +2510,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       source: newMvt.source,
       dest: newMvt.dest,
       quantity: newMvt.qty,
-      operator: newMvt.operator
+      operator: newMvt.operator,
+      created_at: mvtData.customDate ? new Date(mvtData.customDate).toISOString() : new Date().toISOString()
     });
 
     if (error) console.error("Supabase Stock Movement insert error:", error);

@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber } from "@/lib/utils";
 
 export const InvoiceModal: React.FC = () => {
-  const { activeModal, closeModal, sales, depots, settings } = useApp();
+  const { activeModal, closeModal, sales, depots, settings, movements, products } = useApp();
 
   if (!activeModal || !activeModal.startsWith("invoice-")) return null;
 
@@ -21,12 +21,28 @@ export const InvoiceModal: React.FC = () => {
     window.print();
   };
 
-  const saleItems = (sale.items && sale.items.length > 0) ? sale.items : [{
-    productId: "prod-1",
-    title: "Royal Sénégal 100% Brisure (Sac 25kg)",
-    qty: Math.max(1, Math.round((sale.totalAmount || 300000) / 15000)),
-    price: 15000
-  }];
+  // Find real items: from sale.items, or matching stock movement, or real product from catalog
+  let saleItems = (sale.items && sale.items.length > 0) ? sale.items : [];
+  if (saleItems.length === 0) {
+    const matchedMvt = movements.find(m => m.dest && m.dest.includes(sale.id));
+    if (matchedMvt) {
+      const p = products.find(prod => prod.title.toLowerCase() === matchedMvt.prodTitle.toLowerCase());
+      saleItems = [{
+        productId: p ? p.id : "prod-mvt",
+        title: matchedMvt.prodTitle,
+        qty: matchedMvt.qty,
+        price: p ? p.sellPrice : Math.round((sale.totalAmount || 0) / Math.max(1, matchedMvt.qty))
+      }];
+    } else if (products.length > 0) {
+      const p = products[0];
+      saleItems = [{
+        productId: p.id,
+        title: p.title,
+        qty: Math.max(1, Math.round((sale.totalAmount || 0) / (p.sellPrice || 15000))),
+        price: p.sellPrice
+      }];
+    }
+  }
 
   const statusLabel = sale.status === 'Payé' || !sale.status ? 'Payé / Réglé' : sale.status;
   const isPaid = statusLabel.toLowerCase().includes('payé') || statusLabel.toLowerCase().includes('réglé');

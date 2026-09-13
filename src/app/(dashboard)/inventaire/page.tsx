@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Search, ClipboardList, CheckCircle2, AlertTriangle, Eye, RefreshCw, FileSpreadsheet, Building2, PackageCheck } from "lucide-react";
+import { Plus, Search, ClipboardList, CheckCircle2, AlertTriangle, RefreshCw, Eye, Building2, Calendar, FileSpreadsheet, PackageCheck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatNumber, canCreate } from "@/lib/utils";
+import { Pagination } from "@/components/ui/Pagination";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
@@ -17,6 +18,8 @@ export default function InventairePage() {
   const [preset, setPreset] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   if (isLoading) {
     return (
@@ -57,6 +60,9 @@ export default function InventairePage() {
   const totalDiscrepancies = filteredInventories.reduce((sum, i) => sum + i.totalDiscrepancy, 0);
   const adjustedCount = filteredInventories.filter(i => i.status === "Ajusté").length;
 
+  const totalPages = Math.ceil(filteredInventories.length / pageSize) || 1;
+  const paginatedInventories = filteredInventories.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   const activeDepotName = depots.find(d => d.id === (depotFilter !== "all" ? depotFilter : activeDepotId))?.name || "Tous les Dépôts";
 
   const handleExportCSV = () => {
@@ -82,9 +88,9 @@ export default function InventairePage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-emerald-500" /> Inventaires Physiques par Entrepôt & Dépôt
+            <ClipboardList className="w-6 h-6 text-emerald-500" /> Inventaire Physique & Audit des Stocks
           </h1>
-          <p className="text-sm text-slate-400 mt-1">Comptage physique des sacs par entrepôt, détection des écarts et ajustements du stock système.</p>
+          <p className="text-sm text-slate-400 mt-1">Comptage contradictoire en entrepôt, procès-verbal (PV) et ajustement automatisé du stock système.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -92,7 +98,7 @@ export default function InventairePage() {
             onClick={handleExportCSV}
             className="bg-[#1e293b] hover:bg-slate-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-white/10 flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV PV
           </button>
           {canCreate(currentUser, 'inventaire') && (
             <button 
@@ -154,7 +160,7 @@ export default function InventairePage() {
             type="text"
             placeholder="Rechercher par N° inventaire (INV-2026-005), dépôt, auditeur..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="bg-transparent text-white text-sm outline-none w-full"
           />
         </div>
@@ -166,20 +172,21 @@ export default function InventairePage() {
             onDateChange={(start, end) => {
               setStartDate(start);
               setEndDate(end);
+              setCurrentPage(1);
             }}
             preset={preset}
-            onPresetChange={setPreset}
+            onPresetChange={(p) => {
+              setPreset(p);
+              setCurrentPage(1);
+            }}
           />
 
           <select
             value={depotFilter}
-            onChange={(e) => {
-              setDepotFilter(e.target.value);
-              if (e.target.value !== "all") setActiveDepotId(e.target.value);
-            }}
+            onChange={(e) => { setDepotFilter(e.target.value); setCurrentPage(1); }}
             className="bg-[#0f172a] border border-white/15 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none cursor-pointer"
           >
-            <option value="all">📍 Tous les Dépôts</option>
+            <option value="all">🏢 Tous les Dépôts</option>
             {depots.map(d => (
               <option key={d.id} value={d.id}>📍 {d.name}</option>
             ))}
@@ -187,7 +194,7 @@ export default function InventairePage() {
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
             className="bg-[#0f172a] border border-white/15 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none cursor-pointer"
           >
             <option value="all">Tous les Statuts</option>
@@ -236,7 +243,7 @@ export default function InventairePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredInventories.map(inv => (
+                {paginatedInventories.map(inv => (
                   <tr key={inv.id} className="hover:bg-white/5 transition-colors">
                     <td className="p-3 font-mono font-bold text-white">{inv.id}</td>
                     <td className="p-3 text-slate-300 text-xs">{inv.date}</td>
@@ -281,6 +288,21 @@ export default function InventairePage() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {filteredInventories.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredInventories.length}
+            itemsPerPage={pageSize}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(newSize: number) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            itemName="inventaires"
+          />
         )}
       </div>
     </div>

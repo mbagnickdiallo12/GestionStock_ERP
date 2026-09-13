@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Plus, Search, Users, DollarSign, AlertCircle, CheckCircle, Edit, Trash2, Eye, Mail, MapPin, Phone, ShieldCheck, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, canCreate, canManage } from "@/lib/utils";
+import { Pagination } from "@/components/ui/Pagination";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 
@@ -13,6 +14,8 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [debtFilter, setDebtFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   if (isLoading) {
     return (
@@ -76,6 +79,9 @@ export default function ClientsPage() {
     showToast("Repertoire clients exporté en CSV !", "success");
   };
 
+  const totalPages = Math.ceil(filteredClients.length / pageSize) || 1;
+  const paginatedClients = filteredClients.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -118,79 +124,80 @@ export default function ClientsPage() {
 
         <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider">Encours Total Créances</span>
-            <DollarSign className="w-4 h-4 text-red-400" />
+            <span className="text-xs font-bold uppercase tracking-wider">Créances en Cours</span>
+            <DollarSign className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl font-black text-red-400">{formatFCFA(totalDebts)}</div>
-          <span className="text-[11px] text-slate-400">Montant total dû par les clients</span>
+          <div className="text-2xl font-black text-amber-400">{formatFCFA(totalDebts)}</div>
+          <span className="text-[11px] text-slate-400">{clientsWithDebtCount} clients avec solde débiteur</span>
         </div>
 
         <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider">Clients avec Créance</span>
-            <AlertCircle className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold uppercase tracking-wider">Clients à Jour</span>
+            <CheckCircle className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-black text-amber-400">{clientsWithDebtCount}</div>
-          <span className="text-[11px] text-slate-400">En attente de recouvrement</span>
+          <div className="text-2xl font-black text-emerald-400">{totalClients - clientsWithDebtCount}</div>
+          <span className="text-[11px] text-slate-400">Aucun paiement en retard</span>
         </div>
 
         <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider">Plafond Crédit Autorisé</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Plafond Crédit Total</span>
             <ShieldCheck className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-2xl font-black text-blue-400">{formatFCFA(totalCreditLimit)}</div>
-          <span className="text-[11px] text-slate-400">Capacité de financement globale</span>
+          <span className="text-[11px] text-slate-400">Capacité de financement accordée</span>
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-2 rounded-xl flex-1 min-w-[260px]">
-          <Search className="w-4 h-4 text-slate-400" />
+      {/* Filters and Search */}
+      <div className="bg-[#1e293b] border border-white/10 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Rechercher par nom, téléphone, email (contact@...), ville ou adresse..."
+            placeholder="Rechercher par nom, téléphone, ville, email..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent text-white text-sm outline-none w-full"
+            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-[#0f172a] border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-[#0f172a] border border-white/15 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none cursor-pointer"
+            onChange={e => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+            className="bg-[#0f172a] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 focus:outline-none focus:border-emerald-500"
           >
-            <option value="all">Toutes les Catégories</option>
-            <option value="Grossiste Majeur">Grossiste Majeur</option>
-            <option value="Demi-Grossiste">Demi-Grossiste</option>
-            <option value="Détaillant">Détaillant</option>
+            <option value="all">Toutes Catégories</option>
+            <option value="Grossiste">Grossistes</option>
+            <option value="Demi-grossiste">Demi-grossistes</option>
+            <option value="Détaillant">Détaillants</option>
+            <option value="Particulier">Particuliers</option>
           </select>
 
           <select
             value={debtFilter}
-            onChange={(e) => setDebtFilter(e.target.value)}
-            className="bg-[#0f172a] border border-white/15 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none cursor-pointer"
+            onChange={e => { setDebtFilter(e.target.value); setCurrentPage(1); }}
+            className="bg-[#0f172a] border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 focus:outline-none focus:border-emerald-500"
           >
-            <option value="all">Tous les Statuts de Créance</option>
-            <option value="with_debt">⚠️ Clients avec Créance Active</option>
-            <option value="clean">✅ Clients à Jour (Solde 0 FCFA)</option>
+            <option value="all">Tous les Soldes</option>
+            <option value="with_debt">Avec Créance Active</option>
+            <option value="clean">Solde à Jour (0 F)</option>
           </select>
         </div>
       </div>
 
-      {/* Clients Table */}
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden">
+      {/* Table of Clients */}
+      <div className="bg-[#1e293b] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-white/10 text-xs font-bold uppercase text-slate-400 bg-black/20">
+              <tr className="border-b border-white/10 bg-black/20 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
                 <th className="p-3">Client / Raison Sociale</th>
                 <th className="p-3">Catégorie</th>
-                <th className="p-3">Coordonnées (Tél & Email)</th>
-                <th className="p-3">Ville & Adresse</th>
+                <th className="p-3">Coordonnées</th>
+                <th className="p-3">Localisation</th>
                 <th className="p-3 text-right">Plafond Crédit</th>
                 <th className="p-3 text-right">Cumul Achats</th>
                 <th className="p-3 text-right">Solde Créance</th>
@@ -198,7 +205,7 @@ export default function ClientsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredClients.map(c => {
+              {paginatedClients.map(c => {
                 const limit = c.creditLimit || 10000000;
 
                 return (
@@ -227,7 +234,7 @@ export default function ClientsPage() {
                     <td className="p-3">
                       <div className="font-semibold text-slate-300 text-xs">{c.city}</div>
                       <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 truncate max-w-[160px]">
-                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" /> {c.address || "Sens information"}
+                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" /> {c.address || "Sans information"}
                       </div>
                     </td>
                     <td className="p-3 text-right text-blue-400 font-bold text-xs">{formatFCFA(limit)}</td>
@@ -290,6 +297,20 @@ export default function ClientsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredClients.length}
+          itemsPerPage={pageSize}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(newSize: number) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          itemName="clients"
+        />
       </div>
     </div>
   );
