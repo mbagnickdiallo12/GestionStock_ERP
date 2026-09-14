@@ -216,6 +216,8 @@ export interface CompanySettings {
   address: string;
   rccm: string;
   ninea?: string;
+  email?: string;
+  slogan?: string;
   logoUrl?: string;
 }
 

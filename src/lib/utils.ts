@@ -9,6 +9,78 @@ export function formatFCFA(amount: number): string {
   return `${formatNumber(amount)} FCFA`;
 }
 
+export function numberToWordsFR(n: number): string {
+  if (isNaN(n) || n === 0) return "Zéro Franc CFA";
+  
+  const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+  const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+  const tens = ["", "dix", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante-dix", "quatre-vingts", "quatre-vingt-dix"];
+
+  function convertGroup(num: number): string {
+    let res = "";
+    const h = Math.floor(num / 100);
+    const r = num % 100;
+
+    if (h > 0) {
+      if (h === 1) res += "cent";
+      else res += units[h] + " cent";
+      if (r > 0) res += " ";
+    }
+
+    if (r >= 10 && r < 20) {
+      res += teens[r - 10];
+    } else if (r >= 20 && r < 70) {
+      const t = Math.floor(r / 10);
+      const u = r % 10;
+      if (u === 1 && t !== 8) res += tens[t] + " et un";
+      else if (u > 0) res += tens[t] + "-" + units[u];
+      else res += tens[t];
+    } else if (r >= 70 && r < 80) {
+      const u = r % 10;
+      if (u === 1) res += "soixante et onze";
+      else res += "soixante-" + teens[u];
+    } else if (r >= 80 && r < 90) {
+      const u = r % 10;
+      if (u === 0) res += "quatre-vingts";
+      else res += "quatre-vingt-" + units[u];
+    } else if (r >= 90 && r < 100) {
+      const u = r % 10;
+      res += "quatre-vingt-" + teens[u];
+    } else if (r > 0 && r < 10) {
+      res += units[r];
+    }
+
+    return res.trim();
+  }
+
+  const billions = Math.floor(n / 1000000000);
+  let rem = n % 1000000000;
+  const millions = Math.floor(rem / 1000000);
+  rem = rem % 1000000;
+  const thousands = Math.floor(rem / 1000);
+  const ones = Math.floor(rem % 1000);
+
+  const parts: string[] = [];
+
+  if (billions > 0) {
+    parts.push(convertGroup(billions) + (billions > 1 ? " milliards" : " milliard"));
+  }
+  if (millions > 0) {
+    parts.push(convertGroup(millions) + (millions > 1 ? " millions" : " million"));
+  }
+  if (thousands > 0) {
+    if (thousands === 1) parts.push("mille");
+    else parts.push(convertGroup(thousands) + " mille");
+  }
+  if (ones > 0) {
+    parts.push(convertGroup(ones));
+  }
+
+  const str = parts.join(" ").trim();
+  const capitalized = str.charAt(0).toUpperCase() + str.slice(1);
+  return `${capitalized} Francs CFA`;
+}
+
 export function hasPermission(user: UserAccount | null | undefined, moduleKey: string): boolean {
   if (!user) return false;
   if (user.role === 'admin') return true;
