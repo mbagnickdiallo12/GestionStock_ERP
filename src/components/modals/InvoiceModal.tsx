@@ -83,11 +83,12 @@ export const InvoiceModal: React.FC = () => {
 
         {/* Modal Body: Printable A4 Document Sheet */}
         <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-[#090d16]/70">
-          <div className="printable-document bg-white text-black p-8 sm:p-12 rounded-xl font-sans border border-slate-300 shadow-2xl mx-auto w-full max-w-[780px]">
+          <div className="printable-document bg-white text-black p-8 sm:p-10 font-sans border border-black shadow-2xl mx-auto w-full max-w-[800px] flex flex-col justify-between min-h-[275mm]">
             
-            {/* 1. Header: Logo (No border) + Company Profile + Invoice Meta */}
-            <div className="pb-5 border-b-2 border-black">
-              <div className="flex items-start justify-between gap-6">
+            {/* 1. TOP SECTION: Header & Operation Details */}
+            <div className="space-y-4">
+              {/* Header: Logo + Company Info + Invoice Meta */}
+              <div className="pb-4 border-b-2 border-black flex items-start justify-between gap-6">
                 {/* Left: Logo & Company Identity */}
                 <div className="flex items-center gap-4">
                   {/* Clean Logo without border */}
@@ -95,13 +96,13 @@ export const InvoiceModal: React.FC = () => {
                     {settings.logoUrl ? (
                       <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
                     ) : (
-                      <span className="font-black text-2xl tracking-tighter text-black font-mono">
+                      <span className="font-black text-3xl tracking-tighter text-black font-mono">
                         {settings.companyName ? settings.companyName.slice(0, 2).toUpperCase() : "RZ"}
                       </span>
                     )}
                   </div>
                   <div>
-                    <h1 className="text-2xl font-black uppercase tracking-tight text-black font-serif">
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black font-serif">
                       {settings.companyName || "CEEBU TOUBA"}
                     </h1>
                     <p className="text-xs font-bold text-black uppercase tracking-wider mt-0.5">
@@ -120,171 +121,172 @@ export const InvoiceModal: React.FC = () => {
 
                 {/* Right: Invoice Reference Badge */}
                 <div className="text-right shrink-0">
-                  <div className="inline-block border-2 border-black px-4 py-1 bg-black text-white rounded text-center">
+                  <div className="inline-block border-2 border-black px-4 py-1.5 bg-black text-white rounded text-center">
                     <span className="text-sm font-black tracking-widest uppercase">FACTURE</span>
                   </div>
                   <div className="mt-2 text-xs space-y-0.5 text-black">
-                    <p className="font-mono font-black text-sm">N° {sale.id}</p>
-                    <p className="text-xs">Date : <span className="font-mono font-bold">{sale.date}</span></p>
-                    <p className="text-xs">Dépôt : <span className="font-bold">{depot?.name || "Dépôt Principal"}</span></p>
+                    <p className="font-mono font-black text-base">N° {sale.id}</p>
+                    <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{sale.date}</span></p>
+                    <p className="text-xs font-semibold">Dépôt : <span className="font-bold">{depot?.name || "Dépôt Principal"}</span></p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* 2. Client & Transaction Details (Clean, Minimal 2-Column Grid) */}
-            <div className="grid grid-cols-2 gap-4 my-5">
-              {/* Left: Operation Details */}
-              <div className="border border-black rounded-lg p-3 text-xs">
-                <span className="text-[10px] uppercase font-black text-black block border-b border-black/20 pb-1 mb-2">
-                  DÉTAILS OPÉRATION
-                </span>
-                <div className="space-y-1.5 text-xs text-black">
+              {/* 2-Column Client & Operation Details Grid */}
+              <div className="grid grid-cols-2 gap-4 text-xs text-black">
+                {/* Left: Operation Details */}
+                <div className="border border-black rounded-lg p-3 space-y-1.5 bg-white">
+                  <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-1.5">
+                    DÉTAILS OPÉRATION
+                  </span>
                   <div className="flex justify-between">
-                    <span className="text-slate-700">Facturé par :</span>
+                    <span className="text-slate-800 font-semibold">Facturé par :</span>
                     <span className="font-bold uppercase font-mono">{currentUser?.name || "Vendeur"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-700">Mode de règlement :</span>
+                    <span className="text-slate-800 font-semibold">Mode de règlement :</span>
                     <span className="font-bold uppercase">{sale.paymentMode || "Espèces"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-700">Statut :</span>
+                    <span className="text-slate-800 font-semibold">Statut du paiement :</span>
                     <span className="font-bold uppercase">{sale.status || (isPaid ? "Payé" : "À Crédit")}</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Right: Customer Details */}
-              <div className="border-2 border-black rounded-lg p-3 text-xs">
-                <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-2">
-                  FACTURÉ À / CLIENT
-                </span>
-                <div className="space-y-1.5 text-xs text-black">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-slate-700">Nom / Raison :</span>
-                    <span className="font-black text-xs uppercase">{clientNameDisplay}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-700">Téléphone :</span>
-                    <span className="font-mono font-bold">{matchedClient?.phone || "—"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-700">Adresse / Ville :</span>
-                    <span className="font-bold">{matchedClient?.city || depot?.city || "Sénégal"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Items Accounting Table */}
-            <div className="border-2 border-black my-5 rounded-lg overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs text-black">
-                <thead>
-                  <tr className="border-b-2 border-black font-black uppercase text-center bg-slate-100 text-black">
-                    <th className="py-2.5 px-3 border-r-2 border-black w-12 text-center font-black">#</th>
-                    <th className="py-2.5 px-3 border-r-2 border-black text-left font-black">Désignation des Marchandises</th>
-                    <th className="py-2.5 px-3 border-r-2 border-black w-24 text-center font-black">Qté</th>
-                    <th className="py-2.5 px-3 border-r-2 border-black w-28 text-right font-black">Prix Unit.</th>
-                    <th className="py-2.5 px-3 w-32 text-right font-black">Total (FCFA)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black font-semibold text-black">
-                  {saleItems.map((it, idx) => (
-                    <tr key={idx} className="h-9">
-                      <td className="py-2 px-3 border-r-2 border-black text-center font-mono font-bold text-slate-700">
-                        {idx + 1}
-                      </td>
-                      <td className="py-2 px-3 border-r-2 border-black font-bold uppercase text-black">
-                        {it.title}
-                      </td>
-                      <td className="py-2 px-3 border-r-2 border-black text-center font-mono font-bold">
-                        {formatNumber(it.qty)} <span className="text-[10px] font-normal text-slate-600">sacs</span>
-                      </td>
-                      <td className="py-2 px-3 border-r-2 border-black text-right font-mono font-bold">
-                        {formatNumber(it.price)}
-                      </td>
-                      <td className="py-2 px-3 text-right font-mono font-black text-black">
-                        {formatNumber(it.price * it.qty)}
-                      </td>
-                    </tr>
-                  ))}
-                  {/* Empty Spacer Rows */}
-                  {Array.from({ length: Math.max(0, 5 - saleItems.length) }).map((_, i) => (
-                    <tr key={`empty-${i}`} className="h-8">
-                      <td className="border-r-2 border-black text-center text-slate-300 font-mono text-[10px]">{saleItems.length + i + 1}</td>
-                      <td className="border-r-2 border-black"></td>
-                      <td className="border-r-2 border-black"></td>
-                      <td className="border-r-2 border-black"></td>
-                      <td></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* 4. Financial Summary & Amount in Words */}
-            <div className="grid grid-cols-12 gap-5 mt-5 items-start">
-              {/* Left: Amount in Words */}
-              <div className="col-span-7">
-                <div className="border border-black rounded-lg p-3.5 bg-slate-50">
-                  <span className="text-[10px] uppercase font-black text-black block mb-1">
-                    ARRÊTÉ LA PRÉSENTE FACTURE À LA SOMME DE :
+                {/* Right: Customer Details */}
+                <div className="border-2 border-black rounded-lg p-3 space-y-1.5 bg-white">
+                  <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-1.5">
+                    FACTURÉ À / CLIENT
                   </span>
-                  <p className="text-xs font-serif font-black italic text-black leading-snug">
-                    {numberToWordsFR(sale.totalAmount)}
-                  </p>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-slate-800 font-semibold">Nom / Raison :</span>
+                    <span className="font-black text-sm uppercase text-black">{clientNameDisplay}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-800 font-semibold">Téléphone :</span>
+                    <span className="font-mono font-bold text-black">{matchedClient?.phone || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-800 font-semibold">Adresse / Ville :</span>
+                    <span className="font-bold text-black">{matchedClient?.city || depot?.city || "Sénégal"}</span>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Right: Clean Financial Recap Box */}
-              <div className="col-span-5 border-2 border-black rounded-xl overflow-hidden bg-white">
-                <div className="p-3.5 space-y-2 text-xs">
-                  <div className="flex justify-between items-center text-black">
-                    <span className="text-slate-700">Total Brut HT :</span>
-                    <span className="font-mono font-bold">{formatNumber(sale.totalAmount)} FCFA</span>
-                  </div>
-                  <div className="flex justify-between items-center text-black">
-                    <span className="text-slate-700">TVA (Exonérée) :</span>
-                    <span className="font-mono font-bold">0 FCFA</span>
-                  </div>
-                  
-                  {/* NET A PAYER */}
-                  <div className="flex justify-between items-center pt-2 border-t-2 border-black font-black text-sm text-black">
-                    <span className="uppercase tracking-tight">NET À PAYER :</span>
-                    <span className="font-mono text-base font-black">{formatNumber(sale.totalAmount)} FCFA</span>
-                  </div>
+            {/* 2. MIDDLE SECTION: Full-width Table Filling Space */}
+            <div className="my-4 flex-1 flex flex-col justify-start">
+              <div className="border-2 border-black rounded-lg overflow-hidden flex-1 flex flex-col">
+                <table className="w-full text-left border-collapse text-xs text-black">
+                  <thead>
+                    <tr className="border-b-2 border-black font-black uppercase text-center bg-slate-100 text-black">
+                      <th className="py-3 px-3 border-r-2 border-black w-14 text-center font-black">#</th>
+                      <th className="py-3 px-3 border-r-2 border-black text-left font-black">DÉSIGNATION DES MARCHANDISES</th>
+                      <th className="py-3 px-3 border-r-2 border-black w-28 text-center font-black">QUANTITÉ</th>
+                      <th className="py-3 px-3 border-r-2 border-black w-32 text-right font-black">PRIX UNIT.</th>
+                      <th className="py-3 px-3 w-36 text-right font-black">TOTAL (FCFA)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black font-semibold text-black">
+                    {saleItems.map((it, idx) => (
+                      <tr key={idx} className="h-11">
+                        <td className="py-2.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black">
+                          {idx + 1}
+                        </td>
+                        <td className="py-2.5 px-3 border-r-2 border-black font-bold uppercase text-black text-xs sm:text-sm">
+                          {it.title}
+                        </td>
+                        <td className="py-2.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black text-xs sm:text-sm">
+                          {formatNumber(it.qty)} <span className="text-[11px] font-normal text-slate-700">sacs</span>
+                        </td>
+                        <td className="py-2.5 px-3 border-r-2 border-black text-right font-mono font-bold text-black text-xs sm:text-sm">
+                          {formatNumber(it.price)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-black text-black text-xs sm:text-sm">
+                          {formatNumber(it.price * it.qty)}
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Empty Spacer Rows to fill the A4 page proportionally */}
+                    {Array.from({ length: Math.max(0, 10 - saleItems.length) }).map((_, i) => (
+                      <tr key={`empty-${i}`} className="h-10">
+                        <td className="border-r-2 border-black text-center text-slate-300 font-mono text-[10px]">{saleItems.length + i + 1}</td>
+                        <td className="border-r-2 border-black"></td>
+                        <td className="border-r-2 border-black"></td>
+                        <td className="border-r-2 border-black"></td>
+                        <td></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                  <div className="flex justify-between items-center pt-1.5 border-t border-black/20 text-xs">
-                    <span className="text-slate-700">Montant Réglé :</span>
-                    <span className="font-mono font-bold text-black">{formatNumber(reglement)} FCFA</span>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-1 border-t border-black text-xs font-black">
-                    <span>Reste à Payer :</span>
-                    <span className={`font-mono ${resteAPayer > 0 ? 'text-red-700 font-black' : 'text-black'}`}>
-                      {formatNumber(resteAPayer)} FCFA
+            {/* 3. BOTTOM SECTION: Financial Recap, Cachet & Footer */}
+            <div className="space-y-4 pt-1">
+              {/* Financial Summary & Amount in Words */}
+              <div className="grid grid-cols-12 gap-5 items-start">
+                {/* Left: Amount in Words */}
+                <div className="col-span-7">
+                  <div className="border border-black rounded-lg p-3.5 bg-slate-50">
+                    <span className="text-[10px] uppercase font-black text-black block mb-1">
+                      ARRÊTÉ LA PRÉSENTE FACTURE À LA SOMME DE :
                     </span>
+                    <p className="text-xs sm:text-sm font-serif font-black italic text-black leading-snug">
+                      {numberToWordsFR(sale.totalAmount)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right: Clean Financial Recap Box */}
+                <div className="col-span-5 border-2 border-black rounded-xl overflow-hidden bg-white">
+                  <div className="p-3.5 space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-black">
+                      <span className="font-semibold text-slate-800">Total Brut HT :</span>
+                      <span className="font-mono font-bold text-black">{formatNumber(sale.totalAmount)} FCFA</span>
+                    </div>
+                    <div className="flex justify-between items-center text-black">
+                      <span className="font-semibold text-slate-800">TVA (Exonérée) :</span>
+                      <span className="font-mono font-bold text-black">0 FCFA</span>
+                    </div>
+                    
+                    {/* NET A PAYER */}
+                    <div className="flex justify-between items-center pt-2 border-t-2 border-black font-black text-sm text-black">
+                      <span className="uppercase tracking-tight">NET À PAYER :</span>
+                      <span className="font-mono text-base font-black">{formatNumber(sale.totalAmount)} FCFA</span>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1.5 border-t border-black/20 text-xs">
+                      <span className="font-semibold text-slate-800">Montant Réglé :</span>
+                      <span className="font-mono font-bold text-black">{formatNumber(reglement)} FCFA</span>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1 border-t border-black text-xs font-black">
+                      <span>Reste à Payer :</span>
+                      <span className={`font-mono ${resteAPayer > 0 ? 'text-red-700 font-black' : 'text-black'}`}>
+                        {formatNumber(resteAPayer)} FCFA
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* 5. Clean Single Signature / Cachet Box (Right-aligned, no client signature required) */}
-            <div className="flex justify-end mt-8">
-              <div className="w-64 border border-black rounded-lg p-3 h-28 flex flex-col justify-between text-xs text-right">
-                <span className="font-bold text-[10px] uppercase text-black">
-                  POUR L'ENTREPRISE / LA CAISSE :
-                </span>
-                <span className="text-[9px] text-slate-500 italic">Signature & Cachet autorisés</span>
+              {/* Cachet & Signature Box */}
+              <div className="flex justify-end pt-1">
+                <div className="w-72 border-2 border-black rounded-lg p-3.5 h-28 flex flex-col justify-between text-xs text-right bg-white">
+                  <span className="font-black text-[11px] uppercase text-black">
+                    POUR L'ENTREPRISE / LA CAISSE :
+                  </span>
+                  <span className="text-[10px] text-slate-600 italic">Signature & Cachet autorisés</span>
+                </div>
               </div>
-            </div>
 
-            {/* 6. Discreet Minimal Footer */}
-            <div className="mt-8 pt-3 border-t border-black/30 text-center text-[10px] text-slate-600 font-medium">
-              <p>
-                {settings.companyName || "CEEBU TOUBA"} &bull; Siège Social : {companyAddress} &bull; Tél : {settings.phone || "+221 77 855 25 50"}
-              </p>
+              {/* Discreet Minimal Footer */}
+              <div className="pt-3 border-t-2 border-black text-center text-xs text-black font-semibold">
+                <p>
+                  {settings.companyName || "CEEBU TOUBA"} &bull; Siège Social : {companyAddress} &bull; Tél : {settings.phone || "+221 77 855 25 50"}
+                </p>
+              </div>
             </div>
 
           </div>

@@ -189,8 +189,8 @@ body {
   /* 1. Global Print Reset */
   html, body {
     width: 100% !important;
-    height: auto !important;
-    min-height: auto !important;
+    height: 100% !important;
+    min-height: 100% !important;
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
@@ -219,13 +219,16 @@ body {
     visibility: visible !important;
   }
 
-  /* 5. Natural A4 document positioning without flex stretching */
+  /* 5. Exact A4 full-height document positioning */
   .printable-document {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    min-height: 275mm !important;
+    height: 275mm !important;
+    max-height: 275mm !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -235,8 +238,10 @@ body {
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    display: block !important;
-    page-break-inside: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
     page-break-after: avoid !important;
   }
 

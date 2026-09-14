@@ -65,123 +65,125 @@ export const DeliveryNoteModal: React.FC = () => {
         </div>
       )}
     >
-      <div className="printable-document bg-white text-black p-8 sm:p-10 rounded-xl font-sans border border-black shadow-md mx-auto w-full max-w-[780px]">
+      <div className="printable-document bg-white text-black p-8 sm:p-10 font-sans border border-black shadow-md mx-auto w-full max-w-[800px] flex flex-col justify-between min-h-[275mm]">
         
-        {/* Top Content Group */}
-        <div>
+        {/* 1. TOP SECTION: Header & Logistics Details */}
+        <div className="space-y-4">
           {/* Header: Logo, Company Info & BL Badge */}
           <div className="flex justify-between items-start pb-4 border-b-2 border-black">
             <div className="flex items-center gap-4">
               {/* Logo without border */}
-              <div className="w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden">
                 {settings.logoUrl ? (
                   <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
                 ) : (
-                  <span className="font-black text-2xl tracking-tighter text-black font-mono">
+                  <span className="font-black text-3xl tracking-tighter text-black font-mono">
                     {settings.companyName ? settings.companyName.slice(0, 2).toUpperCase() : "RZ"}
                   </span>
                 )}
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black font-serif">
+                <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-black font-serif">
                   {settings.companyName || "CEEBU TOUBA"}
                 </h1>
                 <p className="text-xs font-bold text-black uppercase tracking-wider mt-0.5">
                   {settings.slogan || "COMMERCE GÉNÉRAL • IMPORTATION & DISTRIBUTION DE RIZ"}
                 </p>
-                <p className="text-xs text-black mt-0.5">
-                  {companyAddress} &bull; Tél : <span className="font-bold">{settings.phone || "+221 77 855 25 50"}</span>
+                <p className="text-xs text-black mt-1">
+                  {companyAddress}
                 </p>
-                {(settings.ninea || settings.rccm) && (
-                  <p className="text-[10px] text-black font-semibold mt-0.5">
-                    {settings.ninea ? `NINEA : ${settings.ninea}` : ""} {settings.rccm ? `• RCCM : ${settings.rccm}` : ""}
-                  </p>
-                )}
+                <p className="text-xs text-black">
+                  Tél : <span className="font-bold">{settings.phone || "+221 77 855 25 50"}</span>
+                  {settings.rccm ? ` • RCCM : ${settings.rccm}` : ""}
+                  {settings.ninea ? ` • NINEA : ${settings.ninea}` : ""}
+                </p>
               </div>
             </div>
 
             <div className="text-right shrink-0">
-              <div className="inline-block border-2 border-black px-3 py-1 bg-black text-white rounded text-center">
+              <div className="inline-block border-2 border-black px-4 py-1.5 bg-black text-white rounded text-center">
                 <span className="text-xs font-black tracking-widest uppercase">BON DE LIVRAISON</span>
               </div>
               <div className="mt-2 text-xs space-y-0.5 text-black">
-                <p className="font-mono font-black text-sm">{blNumber}</p>
+                <p className="font-mono font-black text-base">{blNumber}</p>
                 <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{dateStr}</span></p>
               </div>
             </div>
           </div>
 
           {/* 2-Column Metadata Section */}
-          <div className="grid grid-cols-2 gap-4 my-5 text-xs text-black">
+          <div className="grid grid-cols-2 gap-4 text-xs text-black">
             <div className="border border-black rounded-lg p-3 space-y-1.5 bg-white">
-              <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-2">
+              <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-1.5">
                 ORIGINE & EXPÉDITION
               </span>
               <div className="flex justify-between">
-                <span className="font-semibold text-black">Dépôt Expéditeur :</span>
+                <span className="font-semibold text-slate-800">Dépôt Expéditeur :</span>
                 <span className="font-bold text-black">{depotSource || "Dépôt Principal"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-semibold text-black">Transporteur / Chauffeur :</span>
+                <span className="font-semibold text-slate-800">Transporteur / Chauffeur :</span>
                 <span className="font-bold text-black">{driverOrOperator}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-semibold text-black">Date d'enlèvement :</span>
+                <span className="font-semibold text-slate-800">Date d'enlèvement :</span>
                 <span className="font-mono font-bold text-black">{dateStr}</span>
               </div>
             </div>
 
             <div className="border-2 border-black rounded-lg p-3 space-y-1.5 bg-white">
-              <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-2">
+              <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-1.5">
                 DESTINATAIRE / RÉCEPTIONNAIRE
               </span>
               <div className="flex justify-between items-baseline">
-                <span className="font-semibold text-black">Client / Réception :</span>
-                <span className="font-black text-xs uppercase text-black">{recipient || "Client Grossiste"}</span>
+                <span className="font-semibold text-slate-800">Client / Réception :</span>
+                <span className="font-black text-sm uppercase text-black">{recipient || "Client Grossiste"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-semibold text-black">Réf. Vente / Transfert :</span>
+                <span className="font-semibold text-slate-800">Réf. Vente / Transfert :</span>
                 <span className="font-mono font-bold text-black">{idRef}</span>
               </div>
               <div className="flex justify-between">
-                <span className="font-semibold text-black">Statut logistique :</span>
+                <span className="font-semibold text-slate-800">Statut logistique :</span>
                 <span className="font-bold uppercase text-black">Livré / Conforme</span>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Items Table */}
-          <div className="border-2 border-black my-5 rounded-lg overflow-hidden">
+        {/* 2. MIDDLE SECTION: Full-width Table */}
+        <div className="my-4 flex-1 flex flex-col justify-start">
+          <div className="border-2 border-black rounded-lg overflow-hidden flex-1 flex flex-col">
             <table className="w-full text-left border-collapse text-xs text-black">
               <thead>
                 <tr className="border-b-2 border-black font-black uppercase text-center bg-slate-100 text-black">
-                  <th className="py-2.5 px-3 border-r-2 border-black w-12 text-center font-black">#</th>
-                  <th className="py-2.5 px-3 border-r-2 border-black text-left font-black">DÉSIGNATION DE LA MARCHANDISE</th>
-                  <th className="py-2.5 px-3 border-r-2 border-black w-32 text-center font-black">CONDITIONNEMENT</th>
-                  <th className="py-2.5 px-3 w-36 text-right font-black">QUANTITÉ LIVRÉE</th>
+                  <th className="py-3 px-3 border-r-2 border-black w-14 text-center font-black">#</th>
+                  <th className="py-3 px-3 border-r-2 border-black text-left font-black">DÉSIGNATION DE LA MARCHANDISE</th>
+                  <th className="py-3 px-3 border-r-2 border-black w-36 text-center font-black">CONDITIONNEMENT</th>
+                  <th className="py-3 px-3 w-40 text-right font-black">QUANTITÉ LIVRÉE</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black font-semibold text-black">
                 {deliveryItems.map((it, idx) => (
-                  <tr key={idx} className="h-10">
-                    <td className="py-2 px-3 border-r-2 border-black text-center font-mono font-bold text-black">
+                  <tr key={idx} className="h-11">
+                    <td className="py-2.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black">
                       {idx + 1}
                     </td>
-                    <td className="py-2 px-3 border-r-2 border-black font-bold uppercase text-black">
+                    <td className="py-2.5 px-3 border-r-2 border-black font-bold uppercase text-black text-xs sm:text-sm">
                       {it.title}
                     </td>
-                    <td className="py-2 px-3 border-r-2 border-black text-center text-xs font-semibold text-black">
-                      Sacs d'origine
+                    <td className="py-2.5 px-3 border-r-2 border-black text-center text-xs font-semibold text-black">
+                      Sacs d'origine hermétiques
                     </td>
-                    <td className="py-2 px-3 text-right font-mono font-black text-sm text-black">
+                    <td className="py-2.5 px-3 text-right font-mono font-black text-sm text-black">
                       {formatNumber(it.qty)} Sacs
                     </td>
                   </tr>
                 ))}
                 {/* Empty Spacer Rows */}
-                {Array.from({ length: Math.max(0, 4 - deliveryItems.length) }).map((_, i) => (
-                  <tr key={`empty-${i}`} className="h-8">
-                    <td className="border-r-2 border-black text-center text-black font-mono text-[10px]">{deliveryItems.length + i + 1}</td>
+                {Array.from({ length: Math.max(0, 9 - deliveryItems.length) }).map((_, i) => (
+                  <tr key={`empty-${i}`} className="h-10">
+                    <td className="border-r-2 border-black text-center text-slate-300 font-mono text-[10px]">{deliveryItems.length + i + 1}</td>
                     <td className="border-r-2 border-black"></td>
                     <td className="border-r-2 border-black"></td>
                     <td></td>
@@ -190,38 +192,41 @@ export const DeliveryNoteModal: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
 
+        {/* 3. BOTTOM SECTION: Total, Signatures & Footer */}
+        <div className="space-y-4 pt-1">
           {/* Total Highlight Box */}
-          <div className="flex justify-end my-5">
-            <div className="border-2 border-black rounded-lg px-5 py-3 flex items-center justify-between gap-6 min-w-[280px] bg-white">
+          <div className="flex justify-end">
+            <div className="border-2 border-black rounded-lg px-6 py-3.5 flex items-center justify-between gap-8 min-w-[320px] bg-white">
               <span className="text-xs font-black text-black uppercase tracking-wider">TOTAL COLIS LIVRÉS :</span>
-              <span className="text-base font-black text-black font-mono tracking-tight">{formatNumber(totalBags)} SACS</span>
+              <span className="text-lg font-black text-black font-mono tracking-tight">{formatNumber(totalBags)} SACS</span>
             </div>
           </div>
 
           {/* Signatures */}
-          <div className="grid grid-cols-2 gap-6 pt-6 border-t-2 border-black text-xs text-black">
-            <div className="border border-black rounded-lg p-3 h-28 flex flex-col justify-between">
+          <div className="grid grid-cols-2 gap-6 pt-2 text-xs text-black">
+            <div className="border border-black rounded-lg p-3.5 h-32 flex flex-col justify-between">
               <div>
                 <span className="font-bold text-black block uppercase text-[10px] tracking-wider mb-0.5">VISA TRANSPORTEUR / CHAUFFEUR :</span>
-                <p className="text-[9px] text-black italic">Mention « Pris en charge conforme »</p>
+                <p className="text-[9px] text-slate-600 italic">Mention « Pris en charge conforme »</p>
               </div>
               <div className="border-b border-black" />
             </div>
-            <div className="border border-black rounded-lg p-3 h-28 flex flex-col justify-between text-right">
+            <div className="border border-black rounded-lg p-3.5 h-32 flex flex-col justify-between text-right">
               <div>
                 <span className="font-bold text-black block uppercase text-[10px] tracking-wider mb-0.5">VISA & CACHET DU RÉCEPTIONNAIRE :</span>
-                <p className="text-[9px] text-black italic">Date et signature du client / magasinier</p>
+                <p className="text-[9px] text-slate-600 italic">Date et signature du client / magasinier</p>
               </div>
               <div className="border-b border-black" />
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="border-t border-black pt-4 mt-8 flex flex-wrap items-center justify-between gap-2 text-[10px] text-black font-medium">
-          <span>Bon de livraison officiel émis par {settings.companyName || "CEEBU TOUBA"} {settings.ninea ? `• NINEA ${settings.ninea}` : ""}</span>
-          <span>Gestion Logistique RizStock ERP</span>
+          {/* Footer */}
+          <div className="pt-3 border-t-2 border-black flex flex-wrap items-center justify-between gap-2 text-xs text-black font-semibold">
+            <span>Bon de livraison officiel émis par {settings.companyName || "CEEBU TOUBA"} {settings.ninea ? `• NINEA ${settings.ninea}` : ""}</span>
+            <span>Gestion Logistique RizStock ERP</span>
+          </div>
         </div>
 
       </div>
