@@ -98,18 +98,8 @@ export const InvoiceModal: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Stamp Paid */}
-                <div className="w-16 shrink-0 text-right">
-                  {isPaid ? (
-                    <div className="border-2 border-black text-black font-black text-[11px] px-2 py-0.5 uppercase tracking-widest rotate-[-10deg] inline-block">
-                      PAYÉ
-                    </div>
-                  ) : (
-                    <div className="border-2 border-black text-black font-black text-[11px] px-2 py-0.5 uppercase tracking-widest rotate-[-10deg] inline-block">
-                      CRÉDIT
-                    </div>
-                  )}
-                </div>
+                {/* Right Spacer to preserve exact center alignment for company header */}
+                <div className="w-16 shrink-0" />
               </div>
             </div>
 
