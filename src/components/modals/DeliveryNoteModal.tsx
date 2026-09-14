@@ -3,7 +3,7 @@
 import React from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApp } from "@/context/AppContext";
-import { Printer, Wheat } from "lucide-react";
+import { Printer } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 export const DeliveryNoteModal: React.FC = () => {
@@ -42,108 +42,149 @@ export const DeliveryNoteModal: React.FC = () => {
     price: 0
   }];
 
+  const companyAddress = settings.address || "Dakar / Touba - Sénégal";
+
   return (
     <Modal
       id={`bl-${idRef}`}
       title={`Bon de Livraison - ${blNumber}`}
       footer={(
         <div className="flex items-center justify-between w-full no-print">
-          <button onClick={handlePrint} className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30 transition-all">
+          <button 
+            onClick={handlePrint} 
+            className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30 transition-all"
+          >
             <Printer className="w-3.5 h-3.5" /> Imprimer Bon de Livraison (PDF)
           </button>
-          <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors">
+          <button 
+            onClick={closeModal} 
+            className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+          >
             Fermer
           </button>
         </div>
       )}
     >
-      <div className="printable-document bg-white text-slate-900 p-8 rounded-2xl font-sans border border-slate-200/80 shadow-md">
+      <div className="printable-document bg-white text-black p-8 sm:p-10 rounded-xl font-sans border border-black shadow-md mx-auto w-full max-w-[780px]">
         
         {/* Top Content Group */}
         <div>
-          {/* Header: Logo & Title + Status Badge */}
-          <div className="flex justify-between items-start pb-3 border-b border-slate-200/80">
-            <div className="flex items-center gap-3">
-              {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xl sm:text-2xl font-black text-[#1e1b4b] tracking-tight">
-                    {settings.companyName ? settings.companyName.split(" ")[0].toLowerCase() : "rizstock"}
+          {/* Header: Logo, Company Info & BL Badge */}
+          <div className="flex justify-between items-start pb-4 border-b-2 border-black">
+            <div className="flex items-center gap-4">
+              {/* Logo without border */}
+              <div className="w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden">
+                {settings.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="font-black text-2xl tracking-tighter text-black font-mono">
+                    {settings.companyName ? settings.companyName.slice(0, 2).toUpperCase() : "RZ"}
                   </span>
-                </div>
-              )}
-              <span className="text-slate-400 font-bold uppercase text-[10.5px] tracking-wider pl-3 border-l border-slate-200">
-                BON DE LIVRAISON OFFICIEL
-              </span>
+                )}
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black font-serif">
+                  {settings.companyName || "CEEBU TOUBA"}
+                </h1>
+                <p className="text-xs font-bold text-black uppercase tracking-wider mt-0.5">
+                  {settings.slogan || "COMMERCE GÉNÉRAL • IMPORTATION & DISTRIBUTION DE RIZ"}
+                </p>
+                <p className="text-xs text-black mt-0.5">
+                  {companyAddress} &bull; Tél : <span className="font-bold">{settings.phone || "+221 77 855 25 50"}</span>
+                </p>
+                {(settings.ninea || settings.rccm) && (
+                  <p className="text-[10px] text-black font-semibold mt-0.5">
+                    {settings.ninea ? `NINEA : ${settings.ninea}` : ""} {settings.rccm ? `• RCCM : ${settings.rccm}` : ""}
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-slate-400 font-semibold text-[9.5px] uppercase tracking-wider block mb-1">
-                STATUT LIVRAISON
-              </span>
-              <span className="bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-0.5 rounded text-xs font-bold inline-block">
-                Expédié / Livré
-              </span>
+            <div className="text-right shrink-0">
+              <div className="inline-block border-2 border-black px-3 py-1 bg-black text-white rounded text-center">
+                <span className="text-xs font-black tracking-widest uppercase">BON DE LIVRAISON</span>
+              </div>
+              <div className="mt-2 text-xs space-y-0.5 text-black">
+                <p className="font-mono font-black text-sm">{blNumber}</p>
+                <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{dateStr}</span></p>
+              </div>
             </div>
           </div>
 
-          {/* Metadata Section */}
-          <div className="space-y-2.5 my-5 text-xs">
-            <div>
-              <span className="text-slate-400 text-[10.5px] block font-medium">N° de Référence Bon de Livraison :</span>
-              <span className="font-extrabold text-slate-800 text-sm font-mono tracking-tight">{blNumber}</span>
+          {/* 2-Column Metadata Section */}
+          <div className="grid grid-cols-2 gap-4 my-5 text-xs text-black">
+            <div className="border border-black rounded-lg p-3 space-y-1.5 bg-white">
+              <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-2">
+                ORIGINE & EXPÉDITION
+              </span>
+              <div className="flex justify-between">
+                <span className="font-semibold text-black">Dépôt Expéditeur :</span>
+                <span className="font-bold text-black">{depotSource || "Dépôt Principal"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold text-black">Transporteur / Chauffeur :</span>
+                <span className="font-bold text-black">{driverOrOperator}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold text-black">Date d'enlèvement :</span>
+                <span className="font-mono font-bold text-black">{dateStr}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-slate-400 text-[10.5px] block font-medium">Destinataire / Client Réceptionnaire :</span>
-              <span className="font-extrabold text-slate-900 text-sm">{recipient || "Client Grossiste"}</span>
-            </div>
-            <div>
-              <span className="text-slate-400 text-[10.5px] block font-medium">Dépôt Expéditeur / Origine :</span>
-              <span className="font-semibold text-slate-700 text-sm">{depotSource || "Dépôt Principal"}</span>
-            </div>
-            <div>
-              <span className="text-slate-400 text-[10.5px] block font-medium">Transporteur / Chauffeur :</span>
-              <span className="font-semibold text-slate-700 text-sm">{driverOrOperator}</span>
-            </div>
-            <div>
-              <span className="text-slate-400 text-[10.5px] block font-medium">Date d'expédition :</span>
-              <span className="font-extrabold text-slate-800 text-sm">{dateStr}</span>
+
+            <div className="border-2 border-black rounded-lg p-3 space-y-1.5 bg-white">
+              <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-1 mb-2">
+                DESTINATAIRE / RÉCEPTIONNAIRE
+              </span>
+              <div className="flex justify-between items-baseline">
+                <span className="font-semibold text-black">Client / Réception :</span>
+                <span className="font-black text-xs uppercase text-black">{recipient || "Client Grossiste"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold text-black">Réf. Vente / Transfert :</span>
+                <span className="font-mono font-bold text-black">{idRef}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold text-black">Statut logistique :</span>
+                <span className="font-bold uppercase text-black">Livré / Conforme</span>
+              </div>
             </div>
           </div>
-
-          {/* Document Subject Title */}
-          <h2 className="text-sm sm:text-base font-black text-slate-900 mb-3 tracking-tight">
-            Bon de Livraison & Décharge Logistique - {settings.companyName || "RizStock ERP"}
-          </h2>
 
           {/* Items Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="border-2 border-black my-5 rounded-lg overflow-hidden">
+            <table className="w-full text-left border-collapse text-xs text-black">
               <thead>
-                <tr className="border-y border-slate-200 text-slate-400 font-bold uppercase text-[9.5px] tracking-wider">
-                  <th className="py-2 px-2">DATE</th>
-                  <th className="py-2 px-2">DÉSIGNATION DE LA MARCHANDISE</th>
-                  <th className="py-2 px-2 text-right">QUANTITÉ CHARGÉE</th>
+                <tr className="border-b-2 border-black font-black uppercase text-center bg-slate-100 text-black">
+                  <th className="py-2.5 px-3 border-r-2 border-black w-12 text-center font-black">#</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black text-left font-black">DÉSIGNATION DE LA MARCHANDISE</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black w-32 text-center font-black">CONDITIONNEMENT</th>
+                  <th className="py-2.5 px-3 w-36 text-right font-black">QUANTITÉ LIVRÉE</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-black font-semibold text-black">
                 {deliveryItems.map((it, idx) => (
-                  <tr key={idx}>
-                    <td className="py-2.5 px-2 text-slate-600 align-top whitespace-nowrap text-[10.5px]">
-                      {dateStr?.slice(0, 10) || "2026-08-16"}
+                  <tr key={idx} className="h-10">
+                    <td className="py-2 px-3 border-r-2 border-black text-center font-mono font-bold text-black">
+                      {idx + 1}
                     </td>
-                    <td className="py-2.5 px-2 align-top">
-                      <div className="font-bold text-slate-900 text-xs sm:text-sm">
-                        {it.title}
-                      </div>
-                      <div className="text-slate-500 text-[10px] mt-0.5">
-                        Conditionnement standard sacs hermétiques • Réf: {idRef}
-                      </div>
+                    <td className="py-2 px-3 border-r-2 border-black font-bold uppercase text-black">
+                      {it.title}
                     </td>
-                    <td className="py-2.5 px-2 text-right font-black text-slate-900 text-xs sm:text-sm align-top whitespace-nowrap font-mono">
+                    <td className="py-2 px-3 border-r-2 border-black text-center text-xs font-semibold text-black">
+                      Sacs d'origine
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-black text-sm text-black">
                       {formatNumber(it.qty)} Sacs
                     </td>
+                  </tr>
+                ))}
+                {/* Empty Spacer Rows */}
+                {Array.from({ length: Math.max(0, 4 - deliveryItems.length) }).map((_, i) => (
+                  <tr key={`empty-${i}`} className="h-8">
+                    <td className="border-r-2 border-black text-center text-black font-mono text-[10px]">{deliveryItems.length + i + 1}</td>
+                    <td className="border-r-2 border-black"></td>
+                    <td className="border-r-2 border-black"></td>
+                    <td></td>
                   </tr>
                 ))}
               </tbody>
@@ -152,34 +193,39 @@ export const DeliveryNoteModal: React.FC = () => {
 
           {/* Total Highlight Box */}
           <div className="flex justify-end my-5">
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-5 py-3 flex items-center justify-between gap-6 min-w-[260px]">
-              <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">TOTAL COLIS LIVRÉS :</span>
-              <span className="text-lg font-black text-blue-600 font-mono tracking-tight">{formatNumber(totalBags)} SACS</span>
+            <div className="border-2 border-black rounded-lg px-5 py-3 flex items-center justify-between gap-6 min-w-[280px] bg-white">
+              <span className="text-xs font-black text-black uppercase tracking-wider">TOTAL COLIS LIVRÉS :</span>
+              <span className="text-base font-black text-black font-mono tracking-tight">{formatNumber(totalBags)} SACS</span>
             </div>
           </div>
 
           {/* Signatures */}
-          <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200/80 text-xs">
-            <div>
-              <span className="font-bold text-slate-600 block uppercase text-[9.5px] tracking-wider mb-0.5">Visa Transporteur / Chauffeur</span>
-              <p className="text-[9.5px] text-slate-400">Mention "Pris en charge conforme"</p>
-              <div className="h-10 border-b border-dashed border-slate-300 mt-1" />
+          <div className="grid grid-cols-2 gap-6 pt-6 border-t-2 border-black text-xs text-black">
+            <div className="border border-black rounded-lg p-3 h-28 flex flex-col justify-between">
+              <div>
+                <span className="font-bold text-black block uppercase text-[10px] tracking-wider mb-0.5">VISA TRANSPORTEUR / CHAUFFEUR :</span>
+                <p className="text-[9px] text-black italic">Mention « Pris en charge conforme »</p>
+              </div>
+              <div className="border-b border-black" />
             </div>
-            <div className="text-right">
-              <span className="font-bold text-slate-600 block uppercase text-[9.5px] tracking-wider mb-0.5">Visa & Cachet Réceptionnaire</span>
-              <p className="text-[9.5px] text-slate-400">Date et signature du client</p>
-              <div className="h-10 border-b border-dashed border-slate-300 mt-1" />
+            <div className="border border-black rounded-lg p-3 h-28 flex flex-col justify-between text-right">
+              <div>
+                <span className="font-bold text-black block uppercase text-[10px] tracking-wider mb-0.5">VISA & CACHET DU RÉCEPTIONNAIRE :</span>
+                <p className="text-[9px] text-black italic">Date et signature du client / magasinier</p>
+              </div>
+              <div className="border-b border-black" />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200/80 pt-3 mt-auto flex flex-wrap items-center justify-between gap-2 text-[9.5px] text-slate-400">
-          <span>Bon de livraison officiel émis par {settings.companyName || "RizStock ERP"} - NINEA {settings.ninea || "00984521"}</span>
-          <span>Document certifié électroniquement</span>
+        <div className="border-t border-black pt-4 mt-8 flex flex-wrap items-center justify-between gap-2 text-[10px] text-black font-medium">
+          <span>Bon de livraison officiel émis par {settings.companyName || "CEEBU TOUBA"} {settings.ninea ? `• NINEA ${settings.ninea}` : ""}</span>
+          <span>Gestion Logistique RizStock ERP</span>
         </div>
 
       </div>
     </Modal>
   );
 };
+
