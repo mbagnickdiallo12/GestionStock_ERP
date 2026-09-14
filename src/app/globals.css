@@ -265,9 +265,16 @@ body {
     display: inline-block !important;
   }
 
-  /* 7. Force colors on all printable elements */
+  /* 7. Force ultra-high contrast pure black for printed receipts */
+  .printable-document {
+    color: #000000 !important;
+  }
   .printable-document * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  .printable-document table {
+    border-collapse: collapse !important;
+  }
 }
+

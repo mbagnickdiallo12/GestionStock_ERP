@@ -530,8 +530,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           contractType: e.contract_type || 'CDI',
           hireDate: e.hire_date || '',
           emergencyContact: e.emergency_contact || '',
-          transportAllowance: Number(e.transport_allowance || 25000),
-          housingAllowance: Number(e.housing_allowance || 0),
+          transportAllowance: Number(e.transport_allowance ?? 0),
+          housingAllowance: Number(e.housing_allowance ?? 0),
           socialSecurityNum: e.social_security_num || ''
         }));
         setEmployees(loadedEmp);
@@ -2173,24 +2173,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return next;
     });
 
-    await supabase.from('employees').update({
-      name: updatedData.name,
-      first_name: updatedData.firstName,
-      last_name: updatedData.lastName,
-      role: updatedData.role,
-      depot_id: updatedData.depotId,
-      salary: updatedData.salary,
-      advances: updatedData.advances,
-      cni_number: updatedData.cniNumber,
-      phone: updatedData.phone,
-      email: updatedData.email,
-      address: updatedData.address,
-      contract_type: updatedData.contractType,
-      emergency_contact: updatedData.emergencyContact,
-      transport_allowance: updatedData.transportAllowance,
-      housing_allowance: updatedData.housingAllowance,
-      social_security_num: updatedData.socialSecurityNum
-    }).eq('id', id);
+    const updatePayload: Record<string, any> = {};
+    if (updatedData.name !== undefined) updatePayload.name = updatedData.name;
+    if (updatedData.firstName !== undefined) updatePayload.first_name = updatedData.firstName;
+    if (updatedData.lastName !== undefined) updatePayload.last_name = updatedData.lastName;
+    if (updatedData.role !== undefined) updatePayload.role = updatedData.role;
+    if (updatedData.depotId !== undefined) updatePayload.depot_id = updatedData.depotId;
+    if (updatedData.salary !== undefined) updatePayload.salary = updatedData.salary;
+    if (updatedData.advances !== undefined) updatePayload.advances = updatedData.advances;
+    if (updatedData.cniNumber !== undefined) updatePayload.cni_number = updatedData.cniNumber;
+    if (updatedData.phone !== undefined) updatePayload.phone = updatedData.phone;
+    if (updatedData.email !== undefined) updatePayload.email = updatedData.email;
+    if (updatedData.address !== undefined) updatePayload.address = updatedData.address;
+    if (updatedData.birthDate !== undefined) updatePayload.birth_date = updatedData.birthDate ? updatedData.birthDate : null;
+    if (updatedData.birthPlace !== undefined) updatePayload.birth_place = updatedData.birthPlace;
+    if (updatedData.contractType !== undefined) updatePayload.contract_type = updatedData.contractType;
+    if (updatedData.emergencyContact !== undefined) updatePayload.emergency_contact = updatedData.emergencyContact;
+    if (updatedData.transportAllowance !== undefined) updatePayload.transport_allowance = updatedData.transportAllowance;
+    if (updatedData.housingAllowance !== undefined) updatePayload.housing_allowance = updatedData.housingAllowance;
+    if (updatedData.socialSecurityNum !== undefined) updatePayload.social_security_num = updatedData.socialSecurityNum;
+
+    const { error } = await supabase.from('employees').update(updatePayload).eq('id', id);
+    if (error) {
+      console.error("Supabase update employee error:", error);
+    }
 
     logActivity("PAIE", `Modification de la fiche employé RH N° ${id}`);
     showToast(`Fiche employé mise à jour !`, "success");

@@ -264,111 +264,144 @@ export default function AchatsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden">
+      <div className="bg-[#1e293b]/90 border border-white/10 rounded-2xl overflow-hidden shadow-xl shadow-black/20 backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-white/10 text-xs font-bold uppercase text-slate-400 bg-black/20">
-                <th className="p-3">N° Commande</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Fournisseur Partenaire</th>
-                <th className="p-3">Dépôt Récepteur</th>
-                <th className="p-3">Conteneurs / N° BL</th>
-                <th className="p-3 text-right">Volume (Sacs)</th>
-                <th className="p-3 text-right">Coût Total (FCFA)</th>
-                <th className="p-3">Statut Arrivage & Règlement</th>
-                <th className="p-3 text-right">Actions</th>
+              <tr className="border-b border-white/10 text-[11px] font-semibold tracking-wider uppercase text-slate-400 bg-slate-900/60">
+                <th className="py-3.5 px-4 font-semibold">N° Commande</th>
+                <th className="py-3.5 px-4 font-semibold">Date</th>
+                <th className="py-3.5 px-4 font-semibold">Fournisseur Partenaire</th>
+                <th className="py-3.5 px-4 font-semibold">Dépôt Récepteur</th>
+                <th className="py-3.5 px-4 font-semibold">Conteneurs / N° BL</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Volume</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Coût Total</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Statut Arrivage & Paiement</th>
+                <th className="py-3.5 px-4 text-right font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/[0.04]">
               {paginatedPurchases.length > 0 ? (
                 paginatedPurchases.map(p => (
-                  <tr key={p.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-mono font-bold text-white">{p.id}</td>
-                    <td className="p-3 text-slate-300 text-xs">{p.date}</td>
-                    <td className="p-3 font-bold text-white flex items-center gap-2">
-                      <Anchor className="w-4 h-4 text-emerald-500 shrink-0" />
-                      {p.supplier}
+                  <tr key={p.id} className="hover:bg-slate-800/40 transition-colors group">
+                    {/* Commande ID */}
+                    <td className="py-3.5 px-4">
+                      <span className="font-mono text-xs font-semibold text-slate-200 bg-slate-900/80 px-2.5 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                        {p.id}
+                      </span>
                     </td>
-                    <td className="p-3 text-slate-300 text-xs font-semibold">{p.depotName || p.depotId}</td>
-                    <td className="p-3 text-xs text-slate-300 font-mono">
-                      <div>{p.containers}</div>
-                      {p.blNumber && <div className="text-[10px] text-amber-400 font-bold">{p.blNumber}</div>}
+
+                    {/* Date */}
+                    <td className="py-3.5 px-4 text-slate-400 text-xs font-mono whitespace-nowrap">
+                      {p.date}
                     </td>
-                    <td className="p-3 text-right font-extrabold text-white">{formatNumber(p.bags)} Sacs</td>
-                    <td className="p-3 text-right font-black text-emerald-400">{formatFCFA(p.totalCost)}</td>
+
+                    {/* Fournisseur */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                          <Anchor className="w-3.5 h-3.5 text-emerald-400" />
+                        </div>
+                        <span className="font-semibold text-slate-100 text-sm">
+                          {p.supplier}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Dépôt */}
+                    <td className="py-3.5 px-4 text-slate-300 text-xs font-medium">
+                      {p.depotName || p.depotId}
+                    </td>
+
+                    {/* Conteneurs / BL */}
+                    <td className="py-3.5 px-4 text-xs font-mono">
+                      <div className="text-slate-200 font-sans">{p.containers}</div>
+                      {p.blNumber && <div className="text-[11px] text-amber-400/90 font-semibold">{p.blNumber}</div>}
+                    </td>
+
+                    {/* Volume */}
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 text-sm">
+                      {formatNumber(p.bags)} <span className="text-xs font-normal text-slate-400">Sacs</span>
+                    </td>
+
+                    {/* Coût Total */}
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400 text-sm">
+                      {formatFCFA(p.totalCost)}
+                    </td>
                     
-                    {/* Interactive Status & Payment Selectors */}
-                    <td className="p-3">
+                    {/* Statuts */}
+                    <td className="py-3.5 px-4">
                       {canManage(currentUser, 'achats') ? (
-                        <div className="flex flex-col gap-1.5">
-                          {/* Logistic Arrival Status Dropdown */}
+                        <div className="flex flex-col items-center gap-1.5 min-w-[170px]">
                           <select
                             value={p.status}
                             onChange={(e) => updatePurchase(p.id, { status: e.target.value as Purchase['status'] })}
-                            className={`text-xs font-extrabold px-2.5 py-1 rounded-lg border outline-none cursor-pointer transition-all ${
-                              p.status === 'Livré' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
-                              p.status === 'En Transit' ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' :
-                              p.status === 'Dédouanement' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
-                              'bg-purple-500/20 text-purple-400 border-purple-500/40'
+                            className={`w-full text-xs font-semibold px-2.5 py-1 rounded-lg border outline-none cursor-pointer transition-all ${
+                              p.status === 'Livré' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60' :
+                              p.status === 'En Transit' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 hover:border-blue-500/60' :
+                              p.status === 'Dédouanement' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:border-amber-500/60' :
+                              'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:border-purple-500/60'
                             }`}
                             title="Changer le statut logistique de l'arrivage"
                           >
                             <option value="Commandé" className="bg-[#1e293b] text-white">📦 Commandé</option>
-                            <option value="En Transit" className="bg-[#1e293b] text-blue-400">🚢 En Transit (Mer)</option>
-                            <option value="Dédouanement" className="bg-[#1e293b] text-amber-400">⚓ Dédouanement (Port)</option>
-                            <option value="Livré" className="bg-[#1e293b] text-emerald-400">✅ Livré (Crédite le Stock)</option>
+                            <option value="En Transit" className="bg-[#1e293b] text-blue-400">🚢 En Transit</option>
+                            <option value="Dédouanement" className="bg-[#1e293b] text-amber-400">⚓ Dédouanement</option>
+                            <option value="Livré" className="bg-[#1e293b] text-emerald-400">✅ Livré (Stock +)</option>
                           </select>
 
-                          {/* Payment Status Dropdown */}
                           <select
                             value={p.payment}
                             onChange={(e) => updatePurchase(p.id, { payment: e.target.value as Purchase['payment'] })}
-                            className="text-[10px] font-semibold bg-[#0f172a] border border-white/15 text-slate-300 px-2 py-0.5 rounded-md outline-none cursor-pointer"
+                            className="w-full text-[11px] font-medium bg-slate-900/80 border border-white/10 text-slate-300 px-2 py-0.5 rounded-md outline-none cursor-pointer hover:border-white/20 transition-colors"
                             title="Changer le statut de paiement fournisseur"
                           >
-                            <option value="En attente">⏳ En attente</option>
-                            <option value="Acompte 50%">💵 Acompte 50%</option>
-                            <option value="Payé">💳 Payé 100%</option>
+                            <option value="En attente" className="bg-[#1e293b]">⏳ En attente</option>
+                            <option value="Acompte 50%" className="bg-[#1e293b]">💵 Acompte 50%</option>
+                            <option value="Payé" className="bg-[#1e293b]">💳 Payé 100%</option>
                           </select>
                         </div>
                       ) : (
-                        <div className="space-y-1 text-xs">
-                          <span className={`px-2 py-0.5 rounded font-extrabold text-[11px] block text-center ${
-                            p.status === 'Livré' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+                        <div className="space-y-1 text-center">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full font-medium text-xs border ${
+                            p.status === 'Livré' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                           }`}>
                             {p.status}
                           </span>
-                          <span className="text-[10px] text-slate-400 block text-center">{p.payment}</span>
+                          <span className="text-[11px] text-slate-400 block">{p.payment}</span>
                         </div>
                       )}
                     </td>
 
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    {/* Actions */}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         <button 
                           onClick={() => openModal(`reception-${p.id}`)}
-                          className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          className="bg-slate-800/80 hover:bg-emerald-600 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-medium border border-white/5 flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
                           title="Imprimer Bon de Réception (BR)"
                         >
-                          <FileText className="w-3.5 h-3.5" /> Bon BR
+                          <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Bon BR</span>
                         </button>
+
                         {canManage(currentUser, 'achats') && (
-                          <>
+                          <div className="flex items-center pl-1 ml-1 border-l border-white/10 gap-0.5">
                             <button 
                               onClick={() => openModal(`edit-purchase-${p.id}`)}
-                              className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+                              title="Modifier la commande"
                             >
-                              <Edit className="w-3.5 h-3.5" /> Modifier
+                              <Edit className="w-3.5 h-3.5" />
                             </button>
                             <button 
                               onClick={() => handleDelete(p.id)}
-                              className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
-                              title="Supprimer la commande d'achat"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                              title="Supprimer la commande"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -376,7 +409,7 @@ export default function AchatsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400 text-sm">
                     Aucun arrivage ou commande trouvé pour cette sélection.
                   </td>
                 </tr>

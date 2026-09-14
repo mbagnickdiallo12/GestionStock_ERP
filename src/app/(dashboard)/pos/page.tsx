@@ -14,6 +14,7 @@ export default function POSPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const [selectedClient, setSelectedClient] = useState("passant");
+  const [customBuyerName, setCustomBuyerName] = useState("");
   const [paymentMode, setPaymentMode] = useState<Sale['paymentMode']>("Espece");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -55,7 +56,11 @@ export default function POSPage() {
     }
     try {
       setIsSubmitting(true);
-      await processCheckout(selectedClient, paymentMode);
+      const finalClientName = selectedClient === "passant"
+        ? (customBuyerName.trim() || "Client Comptoir")
+        : selectedClient;
+      await processCheckout(finalClientName, paymentMode);
+      setCustomBuyerName("");
     } finally {
       setIsSubmitting(false);
     }
@@ -292,19 +297,39 @@ export default function POSPage() {
               </button>
             </div>
 
-            {/* Client Select */}
-            <div className="mt-4">
-              <label className="text-xs font-semibold text-slate-400 block mb-1">Client / Grossiste</label>
+            {/* Client Select & Buyer Name */}
+            <div className="mt-4 space-y-2">
+              <label className="text-xs font-semibold text-slate-400 block">Client / Acheteur</label>
               <select
                 value={selectedClient}
-                onChange={(e) => setSelectedClient(e.target.value)}
+                onChange={(e) => {
+                  setSelectedClient(e.target.value);
+                  if (e.target.value !== "passant") {
+                    setCustomBuyerName("");
+                  }
+                }}
                 className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer"
               >
-                <option value="passant">👤 Client Comptoir (Comptant)</option>
+                <option value="passant">👤 Client Comptoir / Acheteur direct</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.name}>👤 {c.name} ({c.city})</option>
                 ))}
               </select>
+
+              {selectedClient === "passant" && (
+                <div className="pt-1">
+                  <label className="text-[11px] font-semibold text-emerald-400 block mb-1">
+                    Nom / Raison Sociale de l'Acheteur (pour la Facture) :
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: SGF SARL, Cheikh Amar, etc."
+                    value={customBuyerName}
+                    onChange={(e) => setCustomBuyerName(e.target.value)}
+                    className="w-full bg-[#090d16] border border-emerald-500/40 focus:border-emerald-400 text-white text-xs px-3 py-2 rounded-xl outline-none placeholder:text-slate-500 transition-colors"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Cart Items List */}

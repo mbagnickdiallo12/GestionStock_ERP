@@ -16,8 +16,8 @@ export const EditEmployeeModal: React.FC = () => {
   const [role, setRole] = useState("");
   const [depotId, setDepotId] = useState("dep-1");
   const [contractType, setContractType] = useState<Employee['contractType']>("CDI");
-  const [salary, setSalary] = useState(350000);
-  const [transportAllowance, setTransportAllowance] = useState(25000);
+  const [salary, setSalary] = useState(0);
+  const [transportAllowance, setTransportAllowance] = useState(0);
   const [housingAllowance, setHousingAllowance] = useState(0);
   const [advances, setAdvances] = useState(0);
 
@@ -37,8 +37,8 @@ export const EditEmployeeModal: React.FC = () => {
       setDepotId(targetEmployee.depotId);
       setContractType(targetEmployee.contractType || "CDI");
       setSalary(targetEmployee.salary);
-      setTransportAllowance(targetEmployee.transportAllowance || 25000);
-      setHousingAllowance(targetEmployee.housingAllowance || 0);
+      setTransportAllowance(targetEmployee.transportAllowance ?? 0);
+      setHousingAllowance(targetEmployee.housingAllowance ?? 0);
       setAdvances(targetEmployee.advances);
 
       setCniNumber(targetEmployee.cniNumber || "");

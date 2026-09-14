@@ -43,7 +43,7 @@ export default function RHPage() {
     return matchSearch && matchRole && matchDepot;
   });
 
-  const totalMonthlyPayroll = employees.reduce((sum, e) => sum + (e.salary || 0) + (e.transportAllowance || 0), 0);
+  const totalMonthlyPayroll = employees.reduce((sum, e) => sum + (e.salary || 0) + (e.transportAllowance || 0) + (e.housingAllowance || 0), 0);
   const totalAdvances = employees.reduce((sum, e) => sum + (e.advances || 0), 0);
 
   const handleDelete = (id: string, empName: string) => {
@@ -150,122 +150,179 @@ export default function RHPage() {
       </div>
 
       {/* Employees Table */}
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden">
+      <div className="bg-[#1e293b]/90 border border-white/10 rounded-2xl overflow-hidden shadow-xl shadow-black/20 backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-white/10 text-xs font-bold uppercase text-slate-400 bg-black/20">
-                <th className="p-3">Matricule</th>
-                <th className="p-3">Nom & Prénom</th>
-                <th className="p-3">Dépôt Affecté</th>
-                <th className="p-3">Poste & Contrat</th>
-                <th className="p-3">N° CNI / Tel</th>
-                <th className="p-3">Salaire de Base</th>
-                <th className="p-3">Avances en Cours</th>
-                <th className="p-3">Dernier Bulletin</th>
-                <th className="p-3 text-right">Actions RH</th>
+              <tr className="border-b border-white/10 text-[11px] font-semibold tracking-wider uppercase text-slate-400 bg-slate-900/60">
+                <th className="py-3.5 px-4 font-semibold">Matricule</th>
+                <th className="py-3.5 px-4 font-semibold">Salarié</th>
+                <th className="py-3.5 px-4 font-semibold">Dépôt</th>
+                <th className="py-3.5 px-4 font-semibold">Poste / Contrat</th>
+                <th className="py-3.5 px-4 font-semibold">Coordonnées</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Salaire Base</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Avances</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Dernière Paie</th>
+                <th className="py-3.5 px-4 text-right font-semibold">Actions RH</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredEmployees.map(emp => {
-                const depot = depots.find(d => d.id === emp.depotId);
+            <tbody className="divide-y divide-white/[0.04]">
+              {filteredEmployees.length > 0 ? (
+                filteredEmployees.map(emp => {
+                  const depot = depots.find(d => d.id === emp.depotId);
+                  const initials = emp.name
+                    .split(" ")
+                    .map(n => n[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase() || "RH";
 
-                return (
-                  <tr key={emp.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-mono font-bold text-white"><span className="bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded text-xs">{emp.id}</span></td>
-                    
-                    {/* Employee Name with Dossier Trigger */}
-                    <td className="p-3 font-bold text-white">
-                      <button
-                        onClick={() => openModal(`employee-details-${emp.id}`)}
-                        className="hover:text-emerald-400 flex items-center gap-2 cursor-pointer transition-colors text-left"
-                        title="Voir la fiche RH complète du salarié"
-                      >
-                        <User className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>{emp.name}</span>
-                      </button>
-                    </td>
-
-                    <td className="p-3 text-slate-300 text-xs font-semibold">{depot ? depot.name : emp.depotId}</td>
-                    
-                    <td className="p-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="bg-blue-500/15 text-blue-300 px-2.5 py-0.5 rounded-full text-xs font-semibold">{emp.role}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                          emp.contractType === 'CDD' ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
-                        }`}>
-                          {emp.contractType || 'CDI'}
+                  return (
+                    <tr key={emp.id} className="hover:bg-slate-800/40 transition-colors group">
+                      {/* Matricule */}
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-xs font-medium text-slate-300 bg-slate-900/80 px-2.5 py-1 rounded-md border border-white/5 whitespace-nowrap">
+                          {emp.id}
                         </span>
-                      </div>
-                    </td>
-
-                    <td className="p-3 text-xs text-slate-400 font-mono">
-                      <div>{emp.cniNumber || "1 757 1990 00123"}</div>
-                      <div className="text-[11px] text-slate-300 font-sans">{emp.phone || "+221 77 000 00 00"}</div>
-                    </td>
-
-                    <td className="p-3 text-slate-200 font-mono font-bold">{formatFCFA(emp.salary)}</td>
-                    
-                    <td className="p-3 font-mono">
-                      {emp.advances > 0 ? (
-                        <span className="text-amber-400 font-bold">{formatFCFA(emp.advances)}</span>
-                      ) : (
-                        <span className="text-slate-500">0 FCFA</span>
-                      )}
-                    </td>
-
-                    <td className="p-3 text-slate-400 text-xs">{emp.lastPay}</td>
-
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      </td>
+                      
+                      {/* Salarié Avatar & Name */}
+                      <td className="py-3.5 px-4">
                         <button
                           onClick={() => openModal(`employee-details-${emp.id}`)}
-                          className="bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Fiche RH Salarié"
+                          className="flex items-center gap-3 text-left group-hover:text-emerald-400 transition-colors cursor-pointer"
+                          title="Consulter le dossier RH complet"
                         >
-                          <User className="w-3.5 h-3.5" /> Fiche
+                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xs font-bold shrink-0">
+                            {initials}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-100 group-hover:text-emerald-400 transition-colors text-sm">
+                              {emp.name}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono">
+                              {emp.cniNumber || "CNI non renseignée"}
+                            </div>
+                          </div>
                         </button>
+                      </td>
 
-                        <button 
-                          onClick={() => openModal(`payslip-${emp.id}`)}
-                          className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Générer Bulletin de Paie"
-                        >
-                          <FileText className="w-3.5 h-3.5" /> Paie
-                        </button>
+                      {/* Dépôt */}
+                      <td className="py-3.5 px-4">
+                        <span className="text-slate-300 text-xs font-medium inline-flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                          {depot ? depot.name : emp.depotId}
+                        </span>
+                      </td>
+                      
+                      {/* Poste & Contrat */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-slate-200 text-xs font-medium">{emp.role}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            emp.contractType === 'CDD' 
+                              ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' 
+                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          }`}>
+                            {emp.contractType || 'CDI'}
+                          </span>
+                        </div>
+                      </td>
 
-                        <button 
-                          onClick={() => openModal(`advance-${emp.id}`)}
-                          className="bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Octroyer une Avance"
-                        >
-                          <PlusCircle className="w-3.5 h-3.5" /> Avance
-                        </button>
+                      {/* Coordonnées */}
+                      <td className="py-3.5 px-4 text-xs font-mono text-slate-400">
+                        {emp.phone || "-"}
+                      </td>
 
-                        {canManage(currentUser, 'rh') && (
-                          <>
-                            <button 
-                              onClick={() => openModal(`edit-employee-${emp.id}`)}
-                              className="bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                              title="Modifier les données RH"
-                            >
-                              <Edit className="w-3.5 h-3.5" /> Modifier
-                            </button>
-
-                            <button 
-                              onClick={() => handleDelete(emp.id, emp.name)}
-                              className="p-1 rounded bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-colors cursor-pointer"
-                              title="Supprimer la fiche"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
+                      {/* Salaire Base */}
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 text-sm">
+                        {formatFCFA(emp.salary)}
+                      </td>
+                      
+                      {/* Avances */}
+                      <td className="py-3.5 px-4 text-right font-mono">
+                        {emp.advances > 0 ? (
+                          <span className="inline-block bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md text-xs font-bold">
+                            {formatFCFA(emp.advances)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-xs">0 FCFA</span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+
+                      {/* Dernière Paie */}
+                      <td className="py-3.5 px-4 text-center text-xs">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                          emp.lastPay?.includes('2026')
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-slate-800 text-slate-400 border-white/5'
+                        }`}>
+                          {emp.lastPay || "En attente"}
+                        </span>
+                      </td>
+
+                      {/* Actions RH */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openModal(`employee-details-${emp.id}`)}
+                            className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-medium border border-white/5 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            title="Consulter la fiche RH"
+                          >
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Fiche</span>
+                          </button>
+
+                          <button 
+                            onClick={() => openModal(`payslip-${emp.id}`)}
+                            className="bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-emerald-500/20 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            title="Générer Bulletin de Paie"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Paie</span>
+                          </button>
+
+                          <button 
+                            onClick={() => openModal(`advance-${emp.id}`)}
+                            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 px-2 py-1.5 rounded-lg text-xs font-medium border border-amber-500/20 flex items-center gap-1 transition-all cursor-pointer"
+                            title="Octroyer une Avance"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Avance</span>
+                          </button>
+
+                          {canManage(currentUser, 'rh') && (
+                            <div className="flex items-center pl-1 ml-1 border-l border-white/10 gap-0.5">
+                              <button 
+                                onClick={() => openModal(`edit-employee-${emp.id}`)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+                                title="Modifier les données RH"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button 
+                                onClick={() => handleDelete(emp.id, emp.name)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                                title="Supprimer le dossier"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-slate-400 text-sm">
+                    Aucun employé trouvé pour cette recherche.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

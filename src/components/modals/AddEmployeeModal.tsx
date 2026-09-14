@@ -13,8 +13,8 @@ export const AddEmployeeModal: React.FC = () => {
   const [role, setRole] = useState("Manutentionnaire");
   const [depotId, setDepotId] = useState(depots[0]?.id || "");
   const [contractType, setContractType] = useState<Employee['contractType']>("CDI");
-  const [salary, setSalary] = useState(250000);
-  const [transportAllowance, setTransportAllowance] = useState(25000);
+  const [salary, setSalary] = useState(0);
+  const [transportAllowance, setTransportAllowance] = useState(0);
   const [housingAllowance, setHousingAllowance] = useState(0);
 
   React.useEffect(() => {

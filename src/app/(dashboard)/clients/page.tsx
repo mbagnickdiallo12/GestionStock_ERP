@@ -189,105 +189,135 @@ export default function ClientsPage() {
       </div>
 
       {/* Table of Clients */}
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#1e293b]/90 border border-white/10 rounded-2xl overflow-hidden shadow-xl shadow-black/20 backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-white/10 bg-black/20 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
-                <th className="p-3">Client / Raison Sociale</th>
-                <th className="p-3">Catégorie</th>
-                <th className="p-3">Coordonnées</th>
-                <th className="p-3">Localisation</th>
-                <th className="p-3 text-right">Plafond Crédit</th>
-                <th className="p-3 text-right">Cumul Achats</th>
-                <th className="p-3 text-right">Solde Créance</th>
-                <th className="p-3 text-right">Actions Métier</th>
+              <tr className="border-b border-white/10 text-[11px] font-semibold tracking-wider uppercase text-slate-400 bg-slate-900/60">
+                <th className="py-3.5 px-4 font-semibold">Client / Partenaire</th>
+                <th className="py-3.5 px-4 font-semibold">Catégorie</th>
+                <th className="py-3.5 px-4 font-semibold">Contact</th>
+                <th className="py-3.5 px-4 font-semibold">Localisation</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Plafond Crédit</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Cumul Achats</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Solde Créance</th>
+                <th className="py-3.5 px-4 text-right font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/[0.04]">
               {paginatedClients.map(c => {
                 const limit = c.creditLimit || 10000000;
+                const initials = c.name
+                  .split(" ")
+                  .map(n => n[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "CL";
 
                 return (
-                  <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-3 font-bold text-white">
-                      <div className="text-base">{c.name}</div>
-                      <span className="text-[10px] text-slate-400 font-mono">ID: {c.id}</span>
+                  <tr key={c.id} className="hover:bg-slate-800/40 transition-colors group">
+                    {/* Client Name & Avatar */}
+                    <td className="py-3.5 px-4">
+                      <button
+                        onClick={() => openModal(`modal-client-details-${c.id}`)}
+                        className="flex items-center gap-3 text-left group-hover:text-emerald-400 transition-colors cursor-pointer"
+                        title="Consulter la fiche client et le relevé"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xs font-bold shrink-0">
+                          {initials}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-100 group-hover:text-emerald-400 transition-colors text-sm">
+                            {c.name}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            {c.id}
+                          </div>
+                        </div>
+                      </button>
                     </td>
-                    <td className="p-3">
-                      <span className="bg-blue-500/15 text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+
+                    {/* Catégorie */}
+                    <td className="py-3.5 px-4">
+                      <span className="bg-slate-800 text-slate-300 border border-white/5 px-2.5 py-0.5 rounded-full text-xs font-medium inline-block">
                         {c.category}
                       </span>
                     </td>
-                    <td className="p-3">
-                      <div className="font-semibold text-slate-200 text-xs flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {c.phone}
-                      </div>
-                      {c.email ? (
-                        <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                          <Mail className="w-3 h-3 text-blue-400 shrink-0" /> {c.email}
-                        </div>
-                      ) : (
-                        <span className="text-[10px] text-slate-500 italic">Email non renseigné</span>
-                      )}
+
+                    {/* Contact */}
+                    <td className="py-3.5 px-4 text-xs font-mono text-slate-300">
+                      <div>{c.phone}</div>
+                      {c.email && <div className="text-[11px] text-slate-400 font-sans">{c.email}</div>}
                     </td>
-                    <td className="p-3">
-                      <div className="font-semibold text-slate-300 text-xs">{c.city}</div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 truncate max-w-[160px]">
-                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" /> {c.address || "Sans information"}
-                      </div>
+
+                    {/* Localisation */}
+                    <td className="py-3.5 px-4 text-xs text-slate-300">
+                      <div className="font-medium text-slate-200">{c.city}</div>
+                      <div className="text-[11px] text-slate-400 truncate max-w-[150px]">{c.address || "-"}</div>
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-bold text-xs">{formatFCFA(limit)}</td>
-                    <td className="p-3 text-right text-slate-200 font-bold">{formatFCFA(c.totalPurchases)}</td>
-                    <td className="p-3 text-right">
+
+                    {/* Plafond Crédit */}
+                    <td className="py-3.5 px-4 text-right font-mono font-medium text-blue-400 text-xs">
+                      {formatFCFA(limit)}
+                    </td>
+
+                    {/* Cumul Achats */}
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-200 text-sm">
+                      {formatFCFA(c.totalPurchases)}
+                    </td>
+
+                    {/* Solde Créance */}
+                    <td className="py-3.5 px-4 text-right font-mono">
                       {c.balance > 0 ? (
-                        <div>
-                          <span className="bg-red-500/20 text-red-400 font-black px-2.5 py-1 rounded-full text-xs inline-block">
-                            {formatFCFA(c.balance)}
-                          </span>
-                          <span className="block text-[10px] text-red-400 font-semibold mt-0.5">⚠️ Créance Active</span>
-                        </div>
-                      ) : (
-                        <span className="bg-emerald-500/15 text-emerald-400 font-bold px-2.5 py-1 rounded-full text-xs flex items-center gap-1 justify-end ml-auto w-max">
-                          <CheckCircle className="w-3 h-3" /> À jour (0 FCFA)
+                        <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold px-2.5 py-0.5 rounded-full text-xs inline-block">
+                          {formatFCFA(c.balance)}
                         </span>
+                      ) : (
+                        <span className="text-slate-500 text-xs">À jour (0 F)</span>
                       )}
                     </td>
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+
+                    {/* Actions */}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openModal(`modal-client-details-${c.id}`)}
-                          className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-blue-400 hover:text-white transition-colors cursor-pointer"
-                          title="Voir Fiche Détaillée & Relevé de Compte"
+                          className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-medium border border-white/5 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                          title="Fiche Détaillée & Relevé"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5 text-blue-400" />
+                          <span>Fiche</span>
                         </button>
+
                         {c.balance > 0 && (
                           <button
                             onClick={() => openModal(`settle-debt-${c.id}`)}
-                            className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                            className="bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-emerald-500/20 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                             title="Encaisse le règlement de créance"
                           >
-                            <DollarSign className="w-3.5 h-3.5" /> Régler
+                            <DollarSign className="w-3.5 h-3.5" />
+                            <span>Régler</span>
                           </button>
                         )}
+
                         {canManage(currentUser, 'clients') && (
-                          <>
+                          <div className="flex items-center pl-1 ml-1 border-l border-white/10 gap-0.5">
                             <button
                               onClick={() => openModal(`edit-client-${c.id}`)}
-                              className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                              title="Modifier la fiche client"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+                              title="Modifier la fiche"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDelete(c.id, c.name)}
-                              className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
                               title="Supprimer ce client"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </td>

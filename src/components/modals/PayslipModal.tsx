@@ -18,8 +18,8 @@ export const PayslipModal: React.FC = () => {
   const depot = depots.find(d => d.id === employee.depotId);
 
   const baseSalary = employee.salary || 0;
-  const transportAllowance = employee.transportAllowance || 25000;
-  const housingAllowance = employee.housingAllowance || 0;
+  const transportAllowance = employee.transportAllowance ?? 0;
+  const housingAllowance = employee.housingAllowance ?? 0;
   const grossSalary = baseSalary + transportAllowance + housingAllowance;
 
   const ipresRetirement = Math.round(baseSalary * 0.056);
@@ -142,12 +142,14 @@ export const PayslipModal: React.FC = () => {
                   <td className="py-2.5 px-2 text-right font-semibold text-slate-900 font-mono">{formatFCFA(baseSalary)}</td>
                   <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
                 </tr>
-                <tr>
-                  <td className="py-2.5 px-2 font-bold text-slate-900">Indemnité de Transport Légale</td>
-                  <td className="py-2.5 px-2 text-slate-500 font-mono">Forfait Mensuel</td>
-                  <td className="py-2.5 px-2 text-right font-semibold text-slate-900 font-mono">{formatFCFA(transportAllowance)}</td>
-                  <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
-                </tr>
+                {transportAllowance > 0 && (
+                  <tr>
+                    <td className="py-2.5 px-2 font-bold text-slate-900">Indemnité de Transport Légale</td>
+                    <td className="py-2.5 px-2 text-slate-500 font-mono">Forfait Mensuel</td>
+                    <td className="py-2.5 px-2 text-right font-semibold text-slate-900 font-mono">{formatFCFA(transportAllowance)}</td>
+                    <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
+                  </tr>
+                )}
                 {housingAllowance > 0 && (
                   <tr>
                     <td className="py-2.5 px-2 font-bold text-slate-900">Prime de Logement & Sujétion</td>
