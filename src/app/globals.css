@@ -178,26 +178,25 @@ body {
 }
 
 /* ==============================================================================
-   🖨️ PERFECT A4 ISOLATION PRINT & PDF ENGINE (PDF-GENERATOR SKILL)
+   🖨️ PERFECT ZERO-OVERFLOW A4 ISOLATION PRINT ENGINE
    ============================================================================== */
-@page {
-  size: A4 portrait;
-  margin: 10mm 12mm 10mm 12mm;
-}
-
 @media print {
-  /* 1. Global Print Reset */
+  @page {
+    margin: 0;
+  }
+
+  /* 1. Global Print Reset - Force Single Page Viewport */
   html, body {
     width: 100% !important;
     height: 100% !important;
-    min-height: 100% !important;
+    max-height: 100% !important;
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
     font-size: 11px !important;
-    line-height: 1.35 !important;
-    overflow: visible !important;
+    line-height: 1.25 !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -206,6 +205,7 @@ body {
   header, sidebar, nav, aside, button, select, input, .no-print,
   .toast-container, [data-sonner-toaster], [role="status"] {
     display: none !important;
+    visibility: hidden !important;
   }
 
   /* 3. Hide all regular DOM elements to prevent layout interference */
@@ -219,15 +219,15 @@ body {
     visibility: visible !important;
   }
 
-  /* 5. Exact A4 full-height document positioning */
+  /* 5. Exact Fixed Fullscreen Isolation - Strictly 1 Page without page break */
   .printable-document {
-    position: absolute !important;
+    position: fixed !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 270mm !important;
-    height: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -237,27 +237,11 @@ body {
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
+    overflow: hidden !important;
     page-break-inside: avoid !important;
+    page-break-before: avoid !important;
     page-break-after: avoid !important;
-  }
-
-  /* 5b. Dual-Volet Landscape Document (Facture + BL on 1 single sheet A4 Paysage) */
-  .printable-document.printable-dual-sheet,
-  .printable-dual-sheet {
-    min-height: 195mm !important;
-    height: 195mm !important;
-    max-height: 198mm !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: stretch !important;
-    justify-content: space-between !important;
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* 6. Layout preservation inside printable document */
@@ -291,6 +275,7 @@ body {
   }
   .printable-document tr {
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 
