@@ -36,6 +36,8 @@ interface AppContextType {
   
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 
   settings: CompanySettings;
   updateSettings: (updatedData: Partial<CompanySettings>) => void;
@@ -147,6 +149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeDepotId, setActiveDepotId] = useState<string>("all");
   const [activeRole, setActiveRole] = useState<string>("admin");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   const [settings, setSettings] = useState<CompanySettings>(() => {
     if (typeof window !== "undefined") {
@@ -2821,6 +2824,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeDepotId, setActiveDepotId,
       activeRole, setActiveRole,
       mobileMenuOpen, setMobileMenuOpen,
+      sidebarCollapsed, setSidebarCollapsed,
       settings, updateSettings, categories, depots, products, stocks, sales, cashSessions, movements, purchases, suppliers, clients, debtTransactions, inventories, expenses, employees, users, auditLogs,
       logActivity, clearAuditLogs,
       cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout,

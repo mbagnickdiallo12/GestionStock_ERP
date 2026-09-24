@@ -12,9 +12,10 @@ import { useApp } from "@/context/AppContext";
 import { hasPermission } from "@/lib/utils";
 
 export const Sidebar: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
-  const { currentUser, mobileMenuOpen, setMobileMenuOpen, openModal, products, stocks, logoutUser } = useApp();
+  const { currentUser, mobileMenuOpen, setMobileMenuOpen, sidebarCollapsed, setSidebarCollapsed, openModal, products, stocks, logoutUser } = useApp();
+  const collapsed = sidebarCollapsed;
+  const setCollapsed = setSidebarCollapsed;
 
   const user = currentUser || { username: 'admin', name: 'Administrateur', role: 'admin' as const, depot: 'Tous', lastLogin: '', status: 'Actif' as const };
 

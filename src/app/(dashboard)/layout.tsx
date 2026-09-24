@@ -45,7 +45,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { hasPermission } from "@/lib/utils";
 
 function ProtectedDashboardContent({ children }: { children: React.ReactNode }) {
-  const { currentUser, isLoading, showToast } = useApp();
+  const { currentUser, isLoading, showToast, sidebarCollapsed } = useApp();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -79,14 +79,14 @@ function ProtectedDashboardContent({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex min-h-screen relative font-sans">
+    <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans relative overflow-x-hidden">
       <Sidebar />
-      <main className="flex-1 ml-0 lg:ml-[270px] flex flex-col min-h-screen bg-[#0f172a] text-slate-100 transition-all duration-300">
+      <div className={`flex flex-col min-h-screen w-full min-w-0 transition-all duration-300 ${sidebarCollapsed ? "lg:pl-[76px]" : "lg:pl-[270px]"}`}>
         <Header />
-        <div className="p-4 sm:p-7 flex-1 flex flex-col gap-6">
+        <main className="p-4 sm:p-7 flex-1 flex flex-col gap-6 w-full min-w-0 max-w-full overflow-x-hidden">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
       <ToastContainer />
       <InvoiceModal />
       <DeliveryNoteModal />
