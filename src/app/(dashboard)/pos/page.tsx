@@ -9,7 +9,7 @@ import { formatNumber, formatFCFA, isMatchingDepot } from "@/lib/utils";
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function POSPage() {
-  const { products, categories, stocks, activeDepotId, setActiveDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading } = useApp();
+  const { products, categories, stocks, activeDepotId, setActiveDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
@@ -34,14 +34,26 @@ export default function POSPage() {
     );
   }
 
+  const isRestricted = currentUser && currentUser.role !== 'admin' && currentUser.depot && currentUser.depot !== 'Tous' && currentUser.depot !== 'all';
+  const restrictedDepot = isRestricted ? depots.find(d => 
+    d.id.toLowerCase() === currentUser.depot.toLowerCase() ||
+    d.name.toLowerCase() === currentUser.depot.toLowerCase() ||
+    (d.city && d.city.toLowerCase() === currentUser.depot.toLowerCase()) ||
+    d.name.toLowerCase().includes(currentUser.depot.toLowerCase())
+  ) : null;
+
   const openSession = cashSessions.find(s => s.status === "Ouverte");
-  const activeDepotObj = depots.find(d => isMatchingDepot(d.id, activeDepotId, depots)) || depots[0];
+  const activeDepotObj = restrictedDepot || depots.find(d => isMatchingDepot(d.id, activeDepotId, depots)) || depots[0];
 
   React.useEffect(() => {
-    if (activeDepotId === "all" && depots.length > 0) {
+    if (restrictedDepot) {
+      if (activeDepotId !== restrictedDepot.id) {
+        setActiveDepotId(restrictedDepot.id);
+      }
+    } else if (activeDepotId === "all" && depots.length > 0) {
       setActiveDepotId(depots[0].id);
     }
-  }, [depots, activeDepotId, setActiveDepotId]);
+  }, [depots, activeDepotId, setActiveDepotId, restrictedDepot]);
 
   const handleCheckout = async () => {
     if (isSubmitting) return;
@@ -132,20 +144,28 @@ export default function POSPage() {
             </div>
 
             {/* Depot Selector for Point of Sale */}
-            <div className="flex items-center gap-1.5 bg-[#0f172a] border border-emerald-500/30 px-3 py-1.5 rounded-xl">
-              <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <select
-                value={activeDepotId}
-                onChange={(e) => setActiveDepotId(e.target.value)}
-                className="bg-transparent text-white text-xs sm:text-sm outline-none cursor-pointer font-bold"
-                title="Choisir le dépôt vendeur pour afficher le stock réel"
-              >
-                <option value="all" className="bg-[#1e293b] text-white">📍 Tous les Dépôts (Stock Cumulé)</option>
-                {depots.map(d => (
-                  <option key={d.id} value={d.id} className="bg-[#1e293b] text-white">📍 {d.name}</option>
-                ))}
-              </select>
-            </div>
+            {restrictedDepot ? (
+              <div className="flex items-center gap-1.5 bg-[#0f172a] border border-amber-500/30 px-3 py-1.5 rounded-xl shadow-sm" title={`Vente affectée exclusivement au ${restrictedDepot.name}`}>
+                <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-white text-xs sm:text-sm font-bold truncate">📍 {restrictedDepot.name}</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/30 ml-1">Affecté</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 bg-[#0f172a] border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+                <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <select
+                  value={activeDepotId}
+                  onChange={(e) => setActiveDepotId(e.target.value)}
+                  className="bg-transparent text-white text-xs sm:text-sm outline-none cursor-pointer font-bold"
+                  title="Choisir le dépôt vendeur pour afficher le stock réel"
+                >
+                  <option value="all" className="bg-[#1e293b] text-white">📍 Tous les Dépôts (Stock Cumulé)</option>
+                  {depots.map(d => (
+                    <option key={d.id} value={d.id} className="bg-[#1e293b] text-white">📍 {d.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <select
               value={catFilter}

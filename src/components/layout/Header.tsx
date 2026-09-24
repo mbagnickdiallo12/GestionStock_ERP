@@ -13,6 +13,14 @@ export const Header: React.FC = () => {
     showToast("Nouvelle session de vente ouverte !", "info");
   };
 
+  const isRestricted = currentUser && currentUser.role !== 'admin' && currentUser.depot && currentUser.depot !== 'Tous' && currentUser.depot !== 'all';
+  const restrictedDepot = isRestricted ? depots.find(d => 
+    d.id.toLowerCase() === currentUser.depot.toLowerCase() ||
+    d.name.toLowerCase() === currentUser.depot.toLowerCase() ||
+    (d.city && d.city.toLowerCase() === currentUser.depot.toLowerCase()) ||
+    d.name.toLowerCase().includes(currentUser.depot.toLowerCase())
+  ) : null;
+
   return (
     <header className="h-[70px] bg-[#0f172a]/85 backdrop-blur-md border-b border-white/10 px-4 sm:px-7 flex items-center justify-between sticky top-0 z-40">
       {/* Left: Mobile Menu Button & Active Depot Selector */}
@@ -25,19 +33,31 @@ export const Header: React.FC = () => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 bg-[#1e293b] border border-white/15 px-2.5 sm:px-3 py-1.5 rounded-lg max-w-[200px] sm:max-w-none">
-          <Building2 className="w-4 h-4 text-emerald-500 shrink-0" />
-          <select
-            value={activeDepotId}
-            onChange={(e) => setActiveDepotId(e.target.value)}
-            className="bg-transparent text-white font-semibold text-xs sm:text-sm outline-none cursor-pointer truncate"
-          >
-            <option value="all" className="bg-[#1e293b] text-white">📍 Tous les Dépôts</option>
-            {depots.map((d) => (
-              <option key={d.id} value={d.id} className="bg-[#1e293b] text-white">📍 {d.name}</option>
-            ))}
-          </select>
-        </div>
+        {restrictedDepot ? (
+          <div className="flex items-center gap-2 bg-[#1e293b] border border-amber-500/30 px-2.5 sm:px-3 py-1.5 rounded-lg max-w-[220px] sm:max-w-none shadow-sm" title={`Compte affecté exclusivement au ${restrictedDepot.name}`}>
+            <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-white font-semibold text-xs sm:text-sm truncate">
+              📍 {restrictedDepot.name}
+            </span>
+            <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/30 ml-1 whitespace-nowrap">
+              Affecté
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 bg-[#1e293b] border border-white/15 px-2.5 sm:px-3 py-1.5 rounded-lg max-w-[200px] sm:max-w-none">
+            <Building2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <select
+              value={activeDepotId}
+              onChange={(e) => setActiveDepotId(e.target.value)}
+              className="bg-transparent text-white font-semibold text-xs sm:text-sm outline-none cursor-pointer truncate"
+            >
+              <option value="all" className="bg-[#1e293b] text-white">📍 Tous les Dépôts</option>
+              {depots.map((d) => (
+                <option key={d.id} value={d.id} className="bg-[#1e293b] text-white">📍 {d.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Right Actions */}

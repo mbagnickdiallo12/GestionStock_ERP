@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Search, FileText, CheckCircle, Clock, Truck, SlidersHorizontal, Check, Building2, User } from "lucide-react";
+import { Plus, Search, FileText, CheckCircle, Clock, Truck, SlidersHorizontal, Check, Building2, User, Ban } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatFCFA, formatNumber } from "@/lib/utils";
+import { formatFCFA, formatNumber, canManage, getUserAssignedDepot, isMatchingDepot } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 
 export default function VentesPage() {
-  const { sales, depots, openModal, isLoading, movements } = useApp();
+  const { sales, depots, openModal, isLoading, movements, cancelSale, askConfirm, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -23,6 +23,8 @@ export default function VentesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  const userRestricted = getUserAssignedDepot(currentUser, depots);
+
   // Column visibility settings (clean defaults)
   const [visibleCols, setVisibleCols] = useState({
     date: true,
@@ -33,6 +35,16 @@ export default function VentesPage() {
 
   const toggleCol = (colKey: keyof typeof visibleCols) => {
     setVisibleCols(prev => ({ ...prev, [colKey]: !prev[colKey] }));
+  };
+
+  const handleCancelSale = (sale: (typeof sales)[0]) => {
+    const depotObj = depots.find(d => isMatchingDepot(d.id, sale.depotId, depots));
+    askConfirm({
+      title: `Annuler la Vente ${sale.id} ?`,
+      message: `Êtes-vous sûr de vouloir annuler la facture ${sale.id} d'un montant de ${formatFCFA(sale.totalAmount)} pour ${sale.clientName || 'le client'} ?\n\nTous les sacs de riz vendus seront immédiatement réintégrés dans le stock du dépôt "${depotObj?.name || 'Dépôt'}".`,
+      confirmLabel: "Confirmer l'Annulation & Réintégrer Stock",
+      onConfirm: () => cancelSale(sale.id, "Annulation demandée par l'utilisateur")
+    });
   };
 
   if (isLoading) {
@@ -57,12 +69,13 @@ export default function VentesPage() {
                         s.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         s.items.some(i => i.title.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchPayment = paymentFilter === "all" || s.paymentMode.toLowerCase() === paymentFilter.toLowerCase();
+    const matchDepot = !userRestricted || isMatchingDepot(s.depotId, userRestricted.id, depots);
 
     const saleDate = s.date.slice(0, 10);
     const matchStart = !startDate || saleDate >= startDate;
     const matchEnd = !endDate || saleDate <= endDate;
 
-    return matchSearch && matchPayment && matchStart && matchEnd;
+    return matchSearch && matchPayment && matchDepot && matchStart && matchEnd;
   });
 
   const sortedSales = [...filteredSales].sort((a, b) => {
@@ -320,7 +333,11 @@ export default function VentesPage() {
                       {/* Statut */}
                       {visibleCols.statut && (
                         <td className="py-3.5 px-4 text-center">
-                          {s.status === 'Payé' ? (
+                          {s.status === 'Annulé' ? (
+                            <span className="bg-red-500/15 text-red-400 border border-red-500/30 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                              <Ban className="w-3 h-3" /> Annulé
+                            </span>
+                          ) : s.status === 'Payé' ? (
                             <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" /> Payé
                             </span>
@@ -351,6 +368,16 @@ export default function VentesPage() {
                             <Truck className="w-3.5 h-3.5 text-slate-400" />
                             <span>Bon BL</span>
                           </button>
+                          {s.status !== 'Annulé' && canManage(currentUser) && (
+                            <button 
+                              onClick={() => handleCancelSale(s)}
+                              className="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-red-500/20 flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
+                              title="Annuler la vente et réintégrer le stock"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              <span className="hidden xl:inline">Annuler</span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

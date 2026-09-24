@@ -172,3 +172,21 @@ export function isMatchingDepot(
 
   return false;
 }
+
+export function getUserAssignedDepot(
+  user: UserAccount | null | undefined,
+  depots: any[]
+): any | null {
+  if (!user || user.role === 'admin') return null;
+  if (!user.depot || user.depot === 'Tous' || user.depot === 'all') return null;
+
+  const cleanUserDepot = user.depot.toLowerCase().trim();
+  const matched = depots.find(d => 
+    d.id.toLowerCase() === cleanUserDepot ||
+    d.name.toLowerCase() === cleanUserDepot ||
+    (d.city && d.city.toLowerCase() === cleanUserDepot) ||
+    d.name.toLowerCase().includes(cleanUserDepot)
+  );
+
+  return matched || null;
+}

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { Depot, Product, StockMatrix, Sale, StockMovement, Purchase, Supplier, Client, Expense, Employee, UserAccount, CompanySettings, SaleItem, AuditLog, DebtTransaction, InventorySession, Category, CashSession, BackupVersion } from "@/types";
 import { INITIAL_SETTINGS, INITIAL_DEPOTS, INITIAL_PRODUCTS, INITIAL_STOCKS, INITIAL_SALES, INITIAL_MOVEMENTS, INITIAL_PURCHASES, INITIAL_SUPPLIERS, INITIAL_CLIENTS, INITIAL_DEBT_TRANSACTIONS, INITIAL_INVENTORIES, INITIAL_EXPENSES, INITIAL_EMPLOYEES, INITIAL_USERS, INITIAL_AUDIT_LOGS, INITIAL_CATEGORIES, INITIAL_CASH_SESSIONS } from "@/lib/mockData";
-import { formatFCFA, formatNumber, isMatchingDepot } from "@/lib/utils";
+import { formatFCFA, formatNumber, isMatchingDepot, getUserAssignedDepot } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 interface Toast {
@@ -127,6 +127,8 @@ interface AppContextType {
   addStockMovement: (mvt: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string; customDate?: string }) => void;
   transferStock: (srcId: string, destId: string, prodId: string, qty: number, truck: string) => void;
   addExpense: (exp: Omit<Expense, 'id' | 'date'>) => void;
+  cancelSale: (saleId: string, reason?: string) => Promise<void>;
+  getUserRestrictedDepot: () => Depot | null;
 
   backupVersions: BackupVersion[];
   createBackupSnapshot: (label: string, type?: 'auto_reset' | 'manual_export' | 'manual_upload') => BackupVersion;
@@ -2676,6 +2678,142 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     closeModal();
   };
 
+  const getUserRestrictedDepot = useCallback((): Depot | null => {
+    return getUserAssignedDepot(currentUser, depots);
+  }, [currentUser, depots]);
+
+  // Enforce depot lock for users assigned to a specific depot
+  useEffect(() => {
+    if (currentUser && depots.length > 0) {
+      const restricted = getUserAssignedDepot(currentUser, depots);
+      if (restricted && activeDepotId !== restricted.id) {
+        setActiveDepotId(restricted.id);
+      }
+    }
+  }, [currentUser, depots, activeDepotId]);
+
+  const cancelSale = async (saleId: string, reason?: string) => {
+    const targetSale = sales.find(s => s.id === saleId);
+    if (!targetSale) {
+      showToast("Vente introuvable.", "error");
+      return;
+    }
+    if (targetSale.status === "Annulé") {
+      showToast("Cette vente a déjà été annulée.", "warning");
+      return;
+    }
+
+    const targetDepot = depots.find(d => isMatchingDepot(d.id, targetSale.depotId, depots)) || depots[0];
+    const targetDepotId = targetDepot ? targetDepot.id : targetSale.depotId;
+
+    // 1. Re-credit stock for all items in the sale
+    let saleItems = (targetSale.items && targetSale.items.length > 0) ? targetSale.items : [];
+    if (saleItems.length === 0) {
+      const matchedMvt = movements.find(m => m.dest && m.dest.includes(targetSale.id));
+      if (matchedMvt) {
+        const p = products.find(prod => prod.title.toLowerCase() === matchedMvt.prodTitle.toLowerCase());
+        if (p) {
+          saleItems = [{ productId: p.id, title: p.title, qty: matchedMvt.qty, price: p.sellPrice }];
+        }
+      }
+    }
+
+    setStocks(prev => {
+      const updated = { ...prev };
+      if (!updated[targetDepotId]) updated[targetDepotId] = {};
+
+      saleItems.forEach(item => {
+        const prod = products.find(p => p.id === item.productId || p.title.toLowerCase() === item.title.toLowerCase());
+        const prodId = prod ? prod.id : item.productId;
+        const currentQty = updated[targetDepotId][prodId] || 0;
+        updated[targetDepotId][prodId] = currentQty + item.qty;
+
+        supabase.from('product_stocks').upsert({
+          depot_id: targetDepotId,
+          product_id: prodId,
+          quantity: currentQty + item.qty
+        }, { onConflict: 'depot_id,product_id' }).then();
+      });
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Stocks", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    // 2. Add compensating Stock Movements (ENTREE)
+    const nowIso = new Date().toISOString().slice(0, 16).replace("T", " ");
+    for (const item of saleItems) {
+      const mvtRef = `ANNUL-${targetSale.id}-${Math.floor(100 + Math.random() * 900)}`;
+      const newMvt: StockMovement = {
+        ref: mvtRef,
+        date: nowIso,
+        type: "ENTREE",
+        prodTitle: item.title,
+        source: `Annulation Vente ${targetSale.id}`,
+        dest: targetDepot?.name || targetDepotId,
+        qty: item.qty,
+        operator: currentUser?.name || "Superviseur"
+      };
+
+      setMovements(prev => {
+        const next = [newMvt, ...prev];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_Movements", JSON.stringify(next));
+        }
+        return next;
+      });
+
+      try {
+        await supabase.from('stock_movements').insert({
+          ref: newMvt.ref,
+          type: newMvt.type,
+          product_title: newMvt.prodTitle,
+          source: newMvt.source,
+          dest: newMvt.dest,
+          quantity: newMvt.qty,
+          operator: newMvt.operator,
+          created_at: new Date().toISOString()
+        });
+      } catch (e) {}
+    }
+
+    // 3. Revert client credit if sale was on credit
+    if (targetSale.paymentMode === "Credit" && targetSale.clientName) {
+      const targetCli = clients.find(c => c.name.toLowerCase() === targetSale.clientName.toLowerCase());
+      if (targetCli) {
+        const newPurchases = Math.max(0, targetCli.totalPurchases - targetSale.totalAmount);
+        const newBalance = Math.max(0, targetCli.balance - targetSale.totalAmount);
+        setClients(prev => prev.map(c => c.id === targetCli.id ? { ...c, totalPurchases: newPurchases, balance: newBalance } : c));
+        try {
+          await supabase.from('clients').update({
+            total_purchases: newPurchases,
+            balance: newBalance
+          }).eq('id', targetCli.id);
+        } catch (e) {}
+      }
+    }
+
+    // 4. Update sale status in state and Supabase
+    setSales(prev => {
+      const next = prev.map(s => s.id === saleId ? { ...s, status: "Annulé" as const } : s);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Sales", JSON.stringify(next));
+      }
+      return next;
+    });
+
+    try {
+      await supabase.from('sales').update({ status: 'Annulé' }).eq('id', saleId);
+    } catch (e) {
+      console.error("Error updating sale status to Annulé in Supabase:", e);
+    }
+
+    logActivity("VENTE", `Annulation de la vente ${targetSale.id} (${formatFCFA(targetSale.totalAmount)}) - Stock réintégré au ${targetDepot?.name || targetDepotId}. Raison: ${reason || 'Erreur de saisie / Annulation'}`);
+    showToast(`Vente ${targetSale.id} annulée ! Les sacs de riz ont été réintégrés dans le stock.`, "success");
+    closeModal();
+  };
+
   return (
     <AppContext.Provider value={{
       isLoading, refreshFromSupabase,
@@ -2690,7 +2828,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       confirmState, askConfirm, closeConfirm,
       toasts, showToast,
       openCashSession, closeCashSession,
-      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, updateProductStock, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense,
+      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, updateProductStock, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense, cancelSale, getUserRestrictedDepot,
       backupVersions, createBackupSnapshot, restoreBackupVersion, deleteBackupVersion, importBackupJSON, resetSystemWithAutoBackup
     }}>
       {children}

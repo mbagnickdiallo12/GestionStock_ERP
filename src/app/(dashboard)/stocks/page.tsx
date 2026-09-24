@@ -1,25 +1,94 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Search, Plus, Minus, FileText, FileCheck } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Search, Plus, Minus, FileText, FileCheck, Calendar, Clock, RotateCcw, AlertTriangle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { formatNumber, canCreate } from "@/lib/utils";
+import { formatNumber, canCreate, getUserAssignedDepot, isMatchingDepot } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
 
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 
 export default function StocksPage() {
-  const { movements, depots, products, stocks, openModal, isLoading, currentUser } = useApp();
+  const { movements, depots, products, stocks, sales, openModal, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [mvtTypeFilter, setMvtTypeFilter] = useState("all");
   const [preset, setPreset] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedStockDate, setSelectedStockDate] = useState<string>("");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const userRestricted = getUserAssignedDepot(currentUser, depots);
+
+  // Calculate historical stock matrix at selected date
+  const displayStocks = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (!selectedStockDate || selectedStockDate >= todayStr) {
+      return stocks;
+    }
+
+    // Clone base stocks
+    const historicalStocks: { [depotId: string]: { [prodId: string]: number } } = {};
+    depots.forEach(d => {
+      historicalStocks[d.id] = {};
+      products.forEach(p => {
+        historicalStocks[d.id][p.id] = (stocks[d.id] && stocks[d.id][p.id]) || 0;
+      });
+    });
+
+    // Replay/reverse movements that occurred strictly AFTER selectedStockDate
+    movements.forEach(m => {
+      const mDate = m.date ? m.date.slice(0, 10) : "";
+      if (mDate > selectedStockDate) {
+        const prod = products.find(p => p.title.toLowerCase() === m.prodTitle.toLowerCase());
+        const prodId = prod ? prod.id : "";
+        if (!prodId) return;
+
+        if (m.type === "ENTREE") {
+          const destDepot = depots.find(d => isMatchingDepot(d.name, m.dest, depots) || isMatchingDepot(d.id, m.dest, depots));
+          if (destDepot && historicalStocks[destDepot.id]) {
+            historicalStocks[destDepot.id][prodId] = Math.max(0, (historicalStocks[destDepot.id][prodId] || 0) - m.qty);
+          }
+        } else if (m.type === "SORTIE") {
+          const srcDepot = depots.find(d => isMatchingDepot(d.name, m.source, depots) || isMatchingDepot(d.id, m.source, depots));
+          if (srcDepot && historicalStocks[srcDepot.id]) {
+            historicalStocks[srcDepot.id][prodId] = (historicalStocks[srcDepot.id][prodId] || 0) + m.qty;
+          }
+        } else if (m.type === "TRANSFERT") {
+          const srcDepot = depots.find(d => isMatchingDepot(d.name, m.source, depots) || isMatchingDepot(d.id, m.source, depots));
+          const destDepot = depots.find(d => isMatchingDepot(d.name, m.dest, depots) || isMatchingDepot(d.id, m.dest, depots));
+          if (srcDepot && historicalStocks[srcDepot.id]) {
+            historicalStocks[srcDepot.id][prodId] = (historicalStocks[srcDepot.id][prodId] || 0) + m.qty;
+          }
+          if (destDepot && historicalStocks[destDepot.id]) {
+            historicalStocks[destDepot.id][prodId] = Math.max(0, (historicalStocks[destDepot.id][prodId] || 0) - m.qty);
+          }
+        }
+      }
+    });
+
+    // Reverse sales that occurred strictly after selectedStockDate (if not cancelled)
+    sales.forEach(s => {
+      const sDate = s.date ? s.date.slice(0, 10) : "";
+      if (sDate > selectedStockDate && s.status !== "Annulé") {
+        const depot = depots.find(d => isMatchingDepot(d.id, s.depotId, depots));
+        if (depot && historicalStocks[depot.id]) {
+          s.items.forEach(it => {
+            const prod = products.find(p => p.id === it.productId || p.title.toLowerCase() === it.title.toLowerCase());
+            if (prod && historicalStocks[depot.id]) {
+              historicalStocks[depot.id][prod.id] = (historicalStocks[depot.id][prod.id] || 0) + it.qty;
+            }
+          });
+        }
+      }
+    });
+
+    return historicalStocks;
+  }, [stocks, depots, products, movements, sales, selectedStockDate]);
 
   if (isLoading) {
     return (
@@ -40,12 +109,13 @@ export default function StocksPage() {
                         m.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         m.dest.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = mvtTypeFilter === "all" || m.type === mvtTypeFilter;
+    const matchDepot = !userRestricted || isMatchingDepot(m.source, userRestricted.name, depots) || isMatchingDepot(m.dest, userRestricted.name, depots);
 
     const mvtDate = m.date ? m.date.slice(0, 10) : "";
     const matchStart = !startDate || mvtDate >= startDate;
     const matchEnd = !endDate || mvtDate <= endDate;
 
-    return matchSearch && matchType && matchStart && matchEnd;
+    return matchSearch && matchType && matchDepot && matchStart && matchEnd;
   });
 
   // Explicitly sort movements: NEWEST FIRST (plus récent au plus ancien)
@@ -58,13 +128,15 @@ export default function StocksPage() {
   const totalPages = Math.ceil(sortedMovements.length / itemsPerPage);
   const paginatedMovements = sortedMovements.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const isHistorical = Boolean(selectedStockDate && selectedStockDate < new Date().toISOString().slice(0, 10));
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Stocks & Mouvements des Dépôts</h1>
-          <p className="text-sm text-slate-400 mt-1">Matrice multi-dépôts, bons de livraison (BL), bons de réception (BR) et transferts camionnage.</p>
+          <p className="text-sm text-slate-400 mt-1">Matrice multi-dépôts, consultation à date, bons de livraison (BL) et transferts camionnage.</p>
         </div>
         {canCreate(currentUser, 'stocks') && (
           <div className="flex flex-wrap items-center gap-3">
@@ -90,9 +162,61 @@ export default function StocksPage() {
         )}
       </div>
 
-      {/* Stock Matrix Table */}
-      <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden">
-        <span className="font-extrabold text-base text-white block mb-4">Matrice des Stocks de Sacs de Riz en Temps Réel</span>
+      {/* Stock Matrix Table with Date Selector */}
+      <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 overflow-hidden space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-base text-white">
+              {isHistorical ? `Matrice des Stocks au ${new Date(selectedStockDate).toLocaleDateString('fr-FR')}` : "Matrice des Stocks de Sacs de Riz en Temps Réel"}
+            </span>
+            {isHistorical && (
+              <span className="bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" /> Archive Historique
+              </span>
+            )}
+          </div>
+
+          {/* Date Picker to view stock at a specific date */}
+          <div className="flex flex-wrap items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-1.5 rounded-xl">
+            <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-xs text-slate-300 font-semibold">Stock à la date du :</span>
+            <input
+              type="date"
+              value={selectedStockDate}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setSelectedStockDate(e.target.value)}
+              className="bg-transparent text-white text-xs font-mono font-bold outline-none cursor-pointer"
+            />
+            {selectedStockDate && (
+              <button
+                onClick={() => setSelectedStockDate("")}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-bold px-2 py-0.5 rounded border border-white/10 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Revenir au stock en temps réel"
+              >
+                <RotateCcw className="w-3 h-3" /> Aujourd'hui
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Historical Notice Banner */}
+        {isHistorical && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 px-4 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                État comptable reconstitué au <strong>{new Date(selectedStockDate).toLocaleDateString('fr-FR')}</strong> en déduisant les flux ultérieurs (ventes, entrées, sorties et transferts).
+              </span>
+            </div>
+            <button
+              onClick={() => setSelectedStockDate("")}
+              className="text-amber-400 underline hover:text-amber-200 font-bold whitespace-nowrap cursor-pointer"
+            >
+              Afficher le stock actuel
+            </button>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
@@ -100,7 +224,9 @@ export default function StocksPage() {
                 <th className="p-3">Variété de Riz</th>
                 <th className="p-3">Format</th>
                 {depots.map(d => (
-                  <th key={d.id} className="p-3 text-right">{d.name}</th>
+                  <th key={d.id} className={`p-3 text-right ${userRestricted?.id === d.id ? 'text-amber-400 font-black' : ''}`}>
+                    {d.name} {userRestricted?.id === d.id ? '(Votre Dépôt)' : ''}
+                  </th>
                 ))}
                 <th className="p-3 text-right font-black text-emerald-400">Total Sacs</th>
               </tr>
@@ -109,7 +235,7 @@ export default function StocksPage() {
               {products.map(p => {
                 let totalProdBags = 0;
                 depots.forEach(d => {
-                  totalProdBags += (stocks[d.id] && stocks[d.id][p.id]) || 0;
+                  totalProdBags += (displayStocks[d.id] && displayStocks[d.id][p.id]) || 0;
                 });
 
                 return (
@@ -117,9 +243,9 @@ export default function StocksPage() {
                     <td className="p-3 font-bold text-white">{p.title}</td>
                     <td className="p-3 text-slate-400">{p.weight} kg</td>
                     {depots.map(d => {
-                      const qty = (stocks[d.id] && stocks[d.id][p.id]) || 0;
+                      const qty = (displayStocks[d.id] && displayStocks[d.id][p.id]) || 0;
                       return (
-                        <td key={d.id} className={`p-3 text-right font-bold ${qty < p.alertThreshold ? 'text-red-400' : 'text-slate-200'}`}>
+                        <td key={d.id} className={`p-3 text-right font-bold ${qty < p.alertThreshold ? 'text-red-400' : 'text-slate-200'} ${userRestricted?.id === d.id ? 'bg-amber-500/5' : ''}`}>
                           {formatNumber(qty)}
                         </td>
                       );
