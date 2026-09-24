@@ -226,9 +226,8 @@ body {
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 275mm !important;
-    height: 275mm !important;
-    max-height: 275mm !important;
+    min-height: 270mm !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -240,6 +239,22 @@ body {
     border-radius: 0 !important;
     display: flex !important;
     flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* 5b. Dual-Volet Landscape Document (Facture + BL on 1 single sheet A4 Paysage) */
+  .printable-document.printable-dual-sheet,
+  .printable-dual-sheet {
+    min-height: 195mm !important;
+    height: 195mm !important;
+    max-height: 198mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
     justify-content: space-between !important;
     page-break-inside: avoid !important;
     page-break-after: avoid !important;
