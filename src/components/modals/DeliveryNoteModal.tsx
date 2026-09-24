@@ -7,7 +7,7 @@ import { formatNumber } from "@/lib/utils";
 
 export const DeliveryNoteModal: React.FC = () => {
   const { activeModal, closeModal, sales, movements, depots, settings, products, clients, currentUser } = useApp();
-  const [viewMode, setViewMode] = useState<"dual" | "bl_only" | "invoice_only">("dual");
+  const [viewMode, setViewMode] = useState<"dual" | "bl_only">("dual");
 
   if (!activeModal || !activeModal.startsWith("bl-")) return null;
 
@@ -134,9 +134,9 @@ export const DeliveryNoteModal: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <div>
               <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                <span>Bon de Livraison & Facture &bull; {idRef}</span>
+                <span>Bon de Livraison &bull; {idRef}</span>
                 <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  1 Seule Feuille A4
+                  {viewMode === "dual" ? "Double BL (2x sur 1 Feuille A4)" : "1 BL Plein Format"}
                 </span>
               </h3>
               <p className="text-xs text-slate-400">Destinataire : {recipient} &bull; {dateStr}</p>
@@ -154,10 +154,10 @@ export const DeliveryNoteModal: React.FC = () => {
                     ? "bg-emerald-600 text-white shadow"
                     : "text-slate-400 hover:text-white"
                 }`}
-                title="Imprimer Facture et Bon de Livraison sur 1 seule feuille A4"
+                title="Imprimer 2 Bons de Livraison identiques sur 1 seule feuille A4"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>2-en-1 (Facture + BL)</span>
+                <span>2x BL (1 Feuille A4)</span>
               </button>
 
               <button
@@ -168,22 +168,10 @@ export const DeliveryNoteModal: React.FC = () => {
                     ? "bg-slate-700 text-white shadow"
                     : "text-slate-400 hover:text-white"
                 }`}
+                title="Imprimer 1 seul Bon de Livraison plein format"
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>BL seul</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode("invoice_only")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
-                  viewMode === "invoice_only"
-                    ? "bg-slate-700 text-white shadow"
-                    : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Facture seule</span>
+                <span>1 BL Plein Format</span>
               </button>
             </div>
 
@@ -208,12 +196,12 @@ export const DeliveryNoteModal: React.FC = () => {
         <div className="p-3 sm:p-6 overflow-y-auto flex-1 bg-[#090d16]/80">
           
           {/* ========================================================================= */}
-          {/* 🌟 1. DUAL-VOLET MODE (FACTURE + BON DE LIVRAISON SIDE-BY-SIDE ON 1 PAGE) */}
+          {/* 🌟 1. DUAL-VOLET MODE (2 BONS DE LIVRAISON SIDE-BY-SIDE ON 1 PAGE)        */}
           {/* ========================================================================= */}
           {viewMode === "dual" && (
             <div className="printable-document printable-dual-sheet bg-white text-black p-3 sm:p-5 font-sans border border-black shadow-2xl mx-auto w-full max-w-[1050px] grid grid-cols-1 md:grid-cols-2 gap-3 divide-y-2 md:divide-y-0 md:divide-x-2 divide-dashed divide-black">
               
-              {/* ==================== VOLET GAUCHE : FACTURE ==================== */}
+              {/* ==================== VOLET GAUCHE : BON DE LIVRAISON (EXEMPLAIRE 1) ==================== */}
               <div className="flex flex-col justify-between pr-0 md:pr-3 space-y-1.5 h-full">
                 <div>
                   <div className="flex items-center gap-2.5 pb-1.5 border-b border-black">
@@ -238,8 +226,8 @@ export const DeliveryNoteModal: React.FC = () => {
 
                   <div className="flex justify-between items-center py-1 border-b border-black text-xs font-bold">
                     <div className="flex items-center gap-1.5">
-                      <span className="bg-black text-white px-1.5 py-0.5 text-[9px] font-black uppercase">FACTURE</span>
-                      <span className="font-mono text-xs">{factureCode}</span>
+                      <span className="bg-black text-white px-1.5 py-0.5 text-[9px] font-black uppercase">BON DE LIVRAISON</span>
+                      <span className="font-mono text-xs">{blCode}</span>
                     </div>
                     <div className="font-mono text-[10px] text-black">
                       {dateStr} &nbsp; {timeStr}
@@ -258,7 +246,7 @@ export const DeliveryNoteModal: React.FC = () => {
                       <tr className="border-b-2 border-black font-black uppercase bg-slate-100 text-black">
                         <th className="py-1 px-1 border-r border-black w-8 text-center">Qté</th>
                         <th className="py-1 px-1.5 border-r border-black">Désignation</th>
-                        <th className="py-1 px-1 border-r border-black w-14 text-right">PU</th>
+                        <th className="py-1 px-1.5 border-r border-black w-14 text-right">PU</th>
                         <th className="py-1 px-1.5 w-18 text-right">Total</th>
                       </tr>
                     </thead>
@@ -272,7 +260,7 @@ export const DeliveryNoteModal: React.FC = () => {
                         </tr>
                       ))}
                       {Array.from({ length: Math.max(0, 5 - deliveryItems.length) }).map((_, i) => (
-                        <tr key={`empty-inv-${i}`} className="h-4">
+                        <tr key={`empty-bl1-${i}`} className="h-4">
                           <td className="border-r border-black text-center text-transparent">.</td>
                           <td className="border-r border-black"></td>
                           <td className="border-r border-black"></td>
@@ -287,40 +275,38 @@ export const DeliveryNoteModal: React.FC = () => {
                   <div className="grid grid-cols-12 gap-2 items-start text-[9.5px]">
                     <div className="col-span-6 space-y-0.5">
                       <div className="flex justify-between text-black font-semibold text-[9px]">
-                        <span>Facturé par :</span>
+                        <span>Livré par :</span>
                         <span className="font-bold">{driverOrOperator}</span>
                       </div>
                       <div className="flex justify-between text-black font-semibold text-[9px]">
-                        <span>Solde échéance :</span>
-                        <span className="font-bold font-mono">{formatNumber(resteAPayer)}</span>
+                        <span>Dépôt Source :</span>
+                        <span className="font-bold">{depotSource}</span>
                       </div>
                       <div className="border border-black p-0.5 rounded text-[8px] text-slate-700 leading-tight">
-                        <span className="font-bold text-black">NB : </span>
-                        Marchandise vendue ni reprise ni échangée.
+                        <span className="font-bold text-black">Signature Client : </span>
+                        Marchandise reçue conforme.
                       </div>
                     </div>
 
                     <div className="col-span-6 border-2 border-black rounded p-1 space-y-0.5 bg-slate-50">
                       <div className="flex justify-between items-center text-black font-black text-[11px]">
-                        <span>Net à payer :</span>
-                        <span className="font-mono text-xs">{formatNumber(totalAmount)}</span>
+                        <span>Total Sacs :</span>
+                        <span className="font-mono text-xs">{totalBags} sacs</span>
                       </div>
                       <div className="flex justify-between items-center text-black font-bold text-[9.5px] pt-0.5 border-t border-black/30">
+                        <span>Net à payer :</span>
+                        <span className="font-mono">{formatNumber(totalAmount)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-black font-bold text-[9px] pt-0.5 border-t border-black/30">
                         <span>Règlement :</span>
                         <span className="font-mono">{formatNumber(reglement)}</span>
                       </div>
-                      {resteAPayer > 0 && (
-                        <div className="flex justify-between items-center text-red-700 font-bold text-[9px] pt-0.5 border-t border-black/30">
-                          <span>Reste dû :</span>
-                          <span className="font-mono">{formatNumber(resteAPayer)}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* ==================== VOLET DROIT : BON DE LIVRAISON ==================== */}
+              {/* ==================== VOLET DROIT : BON DE LIVRAISON (EXEMPLAIRE 2) ==================== */}
               <div className="flex flex-col justify-between pl-0 md:pl-3 space-y-1.5 h-full pt-3 md:pt-0">
                 <div>
                   <div className="flex items-center gap-2.5 pb-1.5 border-b border-black">
@@ -519,119 +505,6 @@ export const DeliveryNoteModal: React.FC = () => {
                     <span className="text-[9px] text-slate-600 italic">Mention "Reçu conforme sans réserve" + Signature</span>
                   </div>
                 </div>
-                <div className="pt-2 border-t-2 border-black text-center text-[10px] text-black font-semibold">
-                  <p>{companyName} &bull; {companyAddress} &bull; Tél : {companyPhone}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================================= */}
-          {/* 📄 3. SINGLE FACTURE MODE                                                */}
-          {/* ========================================================================= */}
-          {viewMode === "invoice_only" && (
-            <div className="printable-document printable-single-portrait bg-white text-black p-6 sm:p-8 font-sans border border-black shadow-2xl mx-auto w-full max-w-[800px] flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="pb-3 border-b-2 border-black flex items-start justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full border-2 border-black flex items-center justify-center font-serif font-black text-xl tracking-tight shrink-0 overflow-hidden bg-white">
-                      {settings.logoUrl ? (
-                        <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                      ) : (
-                        <span>TB</span>
-                      )}
-                    </div>
-                    <div>
-                      <h1 className="text-xl font-black uppercase tracking-tight text-black font-serif">{companyName}</h1>
-                      <p className="text-xs font-bold text-black uppercase tracking-wider mt-0.5">{companyAddress}</p>
-                      <p className="text-xs text-black mt-0.5">{companySubAddress} &bull; Tél : <span className="font-bold">{companyPhone}</span></p>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <div className="inline-block border-2 border-black px-3 py-1 bg-black text-white rounded text-center">
-                      <span className="text-xs font-black tracking-widest uppercase">FACTURE</span>
-                    </div>
-                    <div className="mt-1.5 text-xs space-y-0.5 text-black">
-                      <p className="font-mono font-black text-sm">N° {factureCode}</p>
-                      <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{dateStr} {timeStr}</span></p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs text-black">
-                  <div className="border border-black rounded-lg p-2.5 space-y-1 bg-white">
-                    <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-0.5 mb-1">DÉTAILS OPÉRATION</span>
-                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Facturé par :</span><span className="font-bold uppercase font-mono">{driverOrOperator}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Dépôt :</span><span className="font-bold uppercase">{depotSource}</span></div>
-                  </div>
-                  <div className="border-2 border-black rounded-lg p-2.5 space-y-1 bg-white">
-                    <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-0.5 mb-1">FACTURÉ À / CLIENT</span>
-                    <div className="flex justify-between items-baseline"><span className="text-slate-800 font-semibold">Nom :</span><span className="font-black text-sm uppercase text-black">{recipient}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Téléphone :</span><span className="font-mono font-bold text-black">{recipientPhone}</span></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="my-3 flex-1 flex flex-col justify-start">
-                <div className="border-2 border-black rounded-lg overflow-hidden flex-1 flex flex-col">
-                  <table className="w-full text-left border-collapse text-xs text-black">
-                    <thead>
-                      <tr className="border-b-2 border-black font-black uppercase text-center bg-slate-100 text-black">
-                        <th className="py-2 px-3 border-r-2 border-black w-14 text-center font-black">#</th>
-                        <th className="py-2 px-3 border-r-2 border-black text-left font-black">DÉSIGNATION DES MARCHANDISES</th>
-                        <th className="py-2 px-3 border-r-2 border-black w-24 text-center font-black">QUANTITÉ</th>
-                        <th className="py-2 px-3 border-r-2 border-black w-28 text-right font-black">PRIX UNIT.</th>
-                        <th className="py-2 px-3 w-32 text-right font-black">TOTAL (FCFA)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-black font-semibold text-black">
-                      {deliveryItems.map((it, idx) => (
-                        <tr key={idx} className="h-8">
-                          <td className="py-1.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black">{idx + 1}</td>
-                          <td className="py-1.5 px-3 border-r-2 border-black font-bold uppercase text-black text-xs sm:text-sm">{it.title}</td>
-                          <td className="py-1.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black text-xs sm:text-sm">{it.qty} sacs</td>
-                          <td className="py-1.5 px-3 border-r-2 border-black text-right font-mono font-bold text-black">{formatNumber(it.price || 8250)}</td>
-                          <td className="py-1.5 px-3 text-right font-mono font-black text-black">{formatNumber((it.price || 8250) * it.qty)}</td>
-                        </tr>
-                      ))}
-                      {Array.from({ length: Math.max(0, 6 - deliveryItems.length) }).map((_, i) => (
-                        <tr key={`empty-${i}`} className="h-7">
-                          <td className="border-r-2 border-black text-center text-slate-300 font-mono text-[10px]">{deliveryItems.length + i + 1}</td>
-                          <td className="border-r-2 border-black"></td>
-                          <td className="border-r-2 border-black"></td>
-                          <td className="border-r-2 border-black"></td>
-                          <td></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-1">
-                <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-7">
-                    <div className="border border-black rounded-lg p-2.5 bg-slate-50">
-                      <span className="text-[10px] uppercase font-black text-black block mb-0.5">TOTAL COMMANDE MARCHANDISE :</span>
-                      <p className="text-xs sm:text-sm font-serif font-black italic text-black leading-snug">
-                        {totalBags} Sacs livrés
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="col-span-5 border-2 border-black rounded-xl overflow-hidden bg-white p-2.5 space-y-1.5 text-xs">
-                    <div className="flex justify-between items-center text-black font-black text-xs">
-                      <span className="uppercase tracking-tight">NET À PAYER :</span>
-                      <span className="font-mono text-sm font-black">{formatNumber(totalAmount)} FCFA</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t border-black text-xs">
-                      <span className="font-semibold text-slate-800">Montant Réglé :</span>
-                      <span className="font-mono font-bold text-black">{formatNumber(reglement)} FCFA</span>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="pt-2 border-t-2 border-black text-center text-[10px] text-black font-semibold">
                   <p>{companyName} &bull; {companyAddress} &bull; Tél : {companyPhone}</p>
                 </div>

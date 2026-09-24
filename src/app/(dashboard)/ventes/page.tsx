@@ -610,14 +610,24 @@ export default function VentesPage() {
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center justify-end gap-1.5">
                           
-                          {/* 2-in-1 Print Action (Facture + BL) */}
+                          {/* Facture Action (2x Facture on 1 sheet) */}
                           <button 
                             onClick={() => openModal(`invoice-${s.id}`)}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow-emerald-900/50 transition-all active:scale-95"
-                            title="Ouvrir la Facture & Bon de Livraison (Format 2-en-1 A4)"
+                            title="Imprimer la Facture (Double Facture sur 1 Feuille A4)"
                           >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Facture & BL</span>
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Facture</span>
+                          </button>
+
+                          {/* Bon de Livraison Action (2x BL on 1 sheet) */}
+                          <button 
+                            onClick={() => openModal(`bl-${s.id}`)}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-white/10 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-sm"
+                            title="Imprimer le Bon de Livraison (BL)"
+                          >
+                            <Truck className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Bon BL</span>
                           </button>
 
                           {/* Annuler button */}
