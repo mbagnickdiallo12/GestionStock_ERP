@@ -22,9 +22,8 @@ export const PayslipModal: React.FC = () => {
   const housingAllowance = employee.housingAllowance ?? 0;
   const grossSalary = baseSalary + transportAllowance + housingAllowance;
 
-  const ipresRetirement = Math.round(baseSalary * 0.056);
   const advances = employee.advances || 0;
-  const totalDeductions = ipresRetirement + advances;
+  const totalDeductions = advances;
 
   const netPayable = Math.max(0, grossSalary - totalDeductions);
 
@@ -158,18 +157,19 @@ export const PayslipModal: React.FC = () => {
                     <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
                   </tr>
                 )}
-                <tr>
-                  <td className="py-2.5 px-2 font-bold text-slate-900">Cotisation IPRES Retraite Salariale</td>
-                  <td className="py-2.5 px-2 text-slate-500 font-mono">5.6% IPRES</td>
-                  <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
-                  <td className="py-2.5 px-2 text-right font-semibold text-red-600 font-mono">-{formatFCFA(ipresRetirement)}</td>
-                </tr>
-                {advances > 0 && (
+                {advances > 0 ? (
                   <tr>
                     <td className="py-2.5 px-2 font-bold text-slate-900">Remboursement Acomptes sur Salaire</td>
                     <td className="py-2.5 px-2 text-slate-500 font-mono">Déduction</td>
                     <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
                     <td className="py-2.5 px-2 text-right font-semibold text-red-600 font-mono">-{formatFCFA(advances)}</td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td className="py-2.5 px-2 text-slate-500 italic">Aucune retenue ou acompte sur ce mois</td>
+                    <td className="py-2.5 px-2 text-slate-400 font-mono">-</td>
+                    <td className="py-2.5 px-2 text-right text-slate-400 font-mono">-</td>
+                    <td className="py-2.5 px-2 text-right text-slate-400 font-mono">0 FCFA</td>
                   </tr>
                 )}
               </tbody>
@@ -201,7 +201,7 @@ export const PayslipModal: React.FC = () => {
 
         {/* Footer */}
         <div className="border-t border-slate-200/80 pt-3 mt-auto flex flex-wrap items-center justify-between gap-2 text-[9.5px] text-slate-400">
-          <span>Bulletin édité par {settings.companyName || "RizStock ERP"} - N° IPRES / CSS : 402910-A</span>
+          <span>Bulletin édité par {settings.companyName || "RizStock ERP"}</span>
           <span>Document certifié électroniquement</span>
         </div>
 
