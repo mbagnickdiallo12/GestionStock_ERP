@@ -163,7 +163,7 @@ export interface Expense {
   id: string;
   date: string;
   depotId: string;
-  category: 'Manutention' | 'Transport' | 'Loyer' | 'Electricite' | 'Gardiennage' | 'Autre';
+  category: 'Manutention' | 'Journalier' | 'Repas' | 'Maintenance' | 'Transport' | 'Loyer' | 'Electricite' | 'Gardiennage' | 'Autre';
   amount: number;
   beneficiary: string;
   desc: string;

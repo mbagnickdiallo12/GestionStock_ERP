@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   id TEXT PRIMARY KEY,
   date TIMESTAMPTZ DEFAULT NOW(),
   depot_id TEXT REFERENCES depots(id),
-  category TEXT NOT NULL CHECK (category IN ('Manutention', 'Transport', 'Loyer', 'Electricite', 'Gardiennage', 'Autre')),
+  category TEXT NOT NULL CHECK (category IN ('Manutention', 'Journalier', 'Repas', 'Maintenance', 'Transport', 'Loyer', 'Electricite', 'Gardiennage', 'Autre')),
   amount NUMERIC NOT NULL,
   beneficiary TEXT,
   description TEXT,

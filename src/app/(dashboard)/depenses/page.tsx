@@ -235,6 +235,9 @@ export default function DepensesPage() {
           >
             <option value="all" className="bg-[#1e293b]">Toutes Catégories</option>
             <option value="Manutention" className="bg-[#1e293b]">💪 Manutention & Déchargement</option>
+            <option value="Journalier" className="bg-[#1e293b]">👷 Journalier / Main d'œuvre</option>
+            <option value="Repas" className="bg-[#1e293b]">🍲 Repas & Restauration</option>
+            <option value="Maintenance" className="bg-[#1e293b]">🔧 Maintenance & Réparation</option>
             <option value="Transport" className="bg-[#1e293b]">🚚 Transport & Carburant</option>
             <option value="Loyer" className="bg-[#1e293b]">🏢 Loyer Entrepôt</option>
             <option value="Electricite" className="bg-[#1e293b]">⚡ Électricité & Eau</option>
@@ -274,7 +277,16 @@ export default function DepensesPage() {
                         </span>
                       </td>
                       <td className="p-3 whitespace-nowrap">
-                        <span className="bg-amber-500/15 text-amber-400 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                        <span className="bg-amber-500/15 text-amber-400 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                          {e.category === "Manutention" && "💪"}
+                          {e.category === "Journalier" && "👷"}
+                          {e.category === "Repas" && "🍲"}
+                          {e.category === "Maintenance" && "🔧"}
+                          {e.category === "Transport" && "🚚"}
+                          {e.category === "Loyer" && "🏢"}
+                          {e.category === "Electricite" && "⚡"}
+                          {e.category === "Gardiennage" && "🛡️"}
+                          {e.category === "Autre" && "📋"}
                           {e.category}
                         </span>
                       </td>
@@ -349,6 +361,9 @@ export default function DepensesPage() {
               required
             >
               <option value="Manutention" className="bg-[#1e293b]">💪 Manutention & Déchargement</option>
+              <option value="Journalier" className="bg-[#1e293b]">👷 Journalier / Main d'œuvre</option>
+              <option value="Repas" className="bg-[#1e293b]">🍲 Repas & Restauration</option>
+              <option value="Maintenance" className="bg-[#1e293b]">🔧 Maintenance & Réparation</option>
               <option value="Transport" className="bg-[#1e293b]">🚚 Transport & Carburant</option>
               <option value="Loyer" className="bg-[#1e293b]">🏢 Loyer Entrepôt</option>
               <option value="Electricite" className="bg-[#1e293b]">⚡ Électricité & Eau</option>
