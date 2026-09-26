@@ -9,13 +9,14 @@ import { formatNumber, formatFCFA, isMatchingDepot } from "@/lib/utils";
 import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 export default function POSPage() {
-  const { products, categories, stocks, activeDepotId, setActiveDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading, currentUser } = useApp();
+  const { products, categories, stocks, activeDepotId, setActiveDepotId, depots, cart, addToCart, updateCartQty, setCartItemQty, updateCartItemPrice, clearCart, processCheckout, clients, cashSessions, openModal, showToast, isLoading, currentUser } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const [selectedClient, setSelectedClient] = useState("passant");
   const [customBuyerName, setCustomBuyerName] = useState("");
   const [paymentMode, setPaymentMode] = useState<Sale['paymentMode']>("Espece");
+  const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isLoading) {
@@ -71,7 +72,9 @@ export default function POSPage() {
       const finalClientName = selectedClient === "passant"
         ? (customBuyerName.trim() || "Client Comptoir")
         : selectedClient;
-      await processCheckout(finalClientName, paymentMode);
+      const nowTime = new Date().toTimeString().slice(0, 5);
+      const customDateTime = `${saleDate} ${nowTime}`;
+      await processCheckout(finalClientName, paymentMode, customDateTime);
       setCustomBuyerName("");
     } finally {
       setIsSubmitting(false);
@@ -362,11 +365,34 @@ export default function POSPage() {
               ) : (
                 cart.map(item => (
                   <div key={item.productId} className="bg-[#0f172a] border border-white/10 p-3 rounded-xl flex flex-col gap-2 text-xs shadow-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-white truncate">{item.title}</span>
-                        <span className="text-slate-400">{formatNumber(item.price)} F x {formatNumber(item.qty)} = <strong className="text-emerald-400">{formatNumber(item.price * item.qty)} F</strong></span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-bold text-white truncate text-xs sm:text-sm">{item.title}</span>
+                        
+                        {/* Editable Unit Price (P.U) */}
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="text-[11px] text-slate-400 font-semibold">P.U :</span>
+                          <div className="flex items-center bg-[#1e293b] border border-white/15 focus-within:border-emerald-400 rounded-lg px-2 py-0.5 shadow-inner">
+                            <input
+                              type="number"
+                              min="0"
+                              step="50"
+                              value={item.price === 0 ? "" : item.price}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                updateCartItemPrice(item.productId, isNaN(val) ? 0 : Math.max(0, val));
+                              }}
+                              className="w-20 bg-transparent text-emerald-400 font-mono font-black text-xs outline-none"
+                              title="Modifier le prix unitaire du sac pour cette vente"
+                            />
+                            <span className="text-[10px] text-slate-400 font-bold ml-1">F</span>
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-mono">x {formatNumber(item.qty)} =</span>
+                          <strong className="text-emerald-400 font-mono font-bold text-xs">{formatNumber(item.price * item.qty)} F</strong>
+                        </div>
                       </div>
+
+                      {/* Quantity Counter Buttons & Direct Input */}
                       <div className="flex items-center gap-1 bg-[#1e293b] p-1 rounded-xl border border-white/15 shrink-0">
                         <button
                           onClick={() => updateCartQty(item.productId, -1)}
@@ -438,6 +464,27 @@ export default function POSPage() {
             <div className="flex justify-between text-base font-extrabold text-white border-t border-white/10 pt-2">
               <span>Total Net à Payer:</span>
               <span className="text-emerald-400">{formatFCFA(totalAmount)}</span>
+            </div>
+
+            {/* Sale Date Picker */}
+            <div>
+              <label className="text-xs font-semibold text-slate-400 block mb-1">📅 Date de la Vente</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={saleDate}
+                  onChange={(e) => setSaleDate(e.target.value)}
+                  className="bg-[#0f172a] border border-white/15 text-white text-xs px-3 py-2 rounded-xl outline-none flex-1 font-mono cursor-pointer"
+                  title="Personnaliser la date de la vente"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSaleDate(new Date().toISOString().slice(0, 10))}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] px-2.5 py-2 rounded-xl border border-white/10 font-semibold cursor-pointer shrink-0"
+                >
+                  Aujourd'hui
+                </button>
+              </div>
             </div>
 
             <div>

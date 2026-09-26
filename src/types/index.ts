@@ -41,6 +41,13 @@ export interface SaleItem {
   price: number;
 }
 
+export interface DriverInfo {
+  fullName: string;
+  address?: string;
+  matricule?: string; // Matricule / Permis / Plaque camion
+  phone?: string;
+}
+
 export interface Sale {
   id: string; // e.g. FAC-2026-0089
   date: string;
@@ -50,6 +57,7 @@ export interface Sale {
   totalAmount: number; // FCFA
   paymentMode: 'Espece' | 'Wave' | 'Virement' | 'Cheque' | 'Credit';
   status: 'Payé' | 'En attente' | 'Annulé';
+  driverInfo?: DriverInfo;
 }
 
 export interface CashSession {

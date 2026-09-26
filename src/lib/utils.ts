@@ -114,6 +114,18 @@ export function hasPermission(user: UserAccount | null | undefined, moduleKey: s
 export function canCreate(user: UserAccount | null | undefined, moduleKey?: string): boolean {
   if (!user) return false;
   if (user.role === 'admin') return true;
+  if (user.role === 'gerant') {
+    if (!moduleKey) return true;
+    return ['dashboard', 'pos', 'ventes', 'depots', 'produits', 'stocks', 'clients', 'depenses', 'inventaire'].includes(moduleKey);
+  }
+  if (user.role === 'comptable') {
+    if (!moduleKey) return true;
+    return ['dashboard', 'ventes', 'achats', 'fournisseurs', 'clients', 'depenses', 'rapports'].includes(moduleKey);
+  }
+  if (user.role === 'caissier') {
+    if (!moduleKey) return true;
+    return ['pos', 'ventes', 'dashboard'].includes(moduleKey);
+  }
   if (user.role === 'personnalise') {
     if (!moduleKey) return true;
     return hasPermission(user, moduleKey);
@@ -124,6 +136,18 @@ export function canCreate(user: UserAccount | null | undefined, moduleKey?: stri
 export function canManage(user: UserAccount | null | undefined, moduleKey?: string): boolean {
   if (!user) return false;
   if (user.role === 'admin') return true;
+  if (user.role === 'gerant') {
+    if (!moduleKey) return true;
+    return ['dashboard', 'pos', 'ventes', 'depots', 'produits', 'stocks', 'clients', 'depenses', 'inventaire'].includes(moduleKey);
+  }
+  if (user.role === 'comptable') {
+    if (!moduleKey) return true;
+    return ['dashboard', 'ventes', 'achats', 'fournisseurs', 'clients', 'depenses', 'rapports'].includes(moduleKey);
+  }
+  if (user.role === 'caissier') {
+    if (!moduleKey) return true;
+    return ['pos', 'ventes'].includes(moduleKey);
+  }
   if (user.role === 'personnalise') {
     if (!moduleKey) return true;
     return hasPermission(user, moduleKey);

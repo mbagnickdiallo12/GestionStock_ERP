@@ -28,13 +28,16 @@ L'application permet de gérer l'intégralité de la chaîne de valeur du commer
    - Tableau des dernières transactions et alertes de stock critique.
 2. **Point de Vente (POS) & Caisse (`/pos`)** :
    - Grille de produits au **Format Carré (1:1 Ratio `aspect-square`)** affichant la photo authentique du sac de riz (*Royal Sénégal 100% Brisure* par défaut).
-   - Panier interactif en temps réel avec calcul automatique des totaux.
+   - Panier interactif en temps réel avec modification directe du **Prix Unitaire (P.U)** pour chaque article du panier.
+   - Sélecteur de **Date de Vente personnalisée** pour enregistrer des ventes rétroactives avec horodatage précis.
    - Encaissement multi-modes (*Espèces, Wave Mobile Money, Virement, Chèque, Crédit*).
    - **État & Clôture de Caisse (`CashAuditModal.tsx`)** : Calculateur de billetage (10.000F, 5.000F, 2.000F, 1.000F, 500F), calcul théorique vs réel et gestion des écarts (Manquant/Excédent).
    - **Journal de Caisse (`CashJournalModal.tsx`)** : Registre chronologique quotidien des recettes et dépenses de caisse.
-3. **Historique des Ventes & Factures (`/ventes`)** :
+3. **Historique des Ventes, Modification & Factures (`/ventes`)** :
    - Registre exhaustif des ventes avec filtre par période et recherche par N° Facture (`FAC-2026-XXXX`).
-   - Impression PDF des **Factures Officielle de Vente** ([`InvoiceModal.tsx`](file:///Users/mac/Documents/Antigravity%20Projets/gestionstock/src/components/modals/InvoiceModal.tsx)) et **Bons de Livraison (BL)** ([`DeliveryNoteModal.tsx`](file:///Users/mac/Documents/Antigravity%20Projets/gestionstock/src/components/modals/DeliveryNoteModal.tsx)).
+   - **Modification Complète de Vente (`EditSaleModal.tsx`)** : Rectification des articles, quantités, prix unitaire, date, client, mode de paiement, et recalcul automatique des stocks et créances clients.
+   - Impression PDF des **Factures Officielle de Vente** ([`InvoiceModal.tsx`](file:///Users/mac/Documents/Antigravity%20Projets/gestionstock/src/components/modals/InvoiceModal.tsx)) et **Bons de Livraison (BL)** ([`DeliveryNoteModal.tsx`](file:///Users/mac/Documents/Antigravity%20Projets/gestionstock/src/components/modals/DeliveryNoteModal.tsx)) avec saisie et affichage complet des **informations du chauffeur** (*Nom et prénom, Téléphone, N° Matricule camion/permis, Adresse*).
+   - **Annulation de Vente** avec réintégration immédiate des sacs de riz dans le stock du dépôt.
 
 ### 📦 B. Stocks & Logistique
 1. **Dépôts de Riz (`/depots`)** :

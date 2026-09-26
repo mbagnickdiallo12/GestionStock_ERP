@@ -223,9 +223,9 @@ export default function StocksPage() {
               <tr className="border-b border-white/10 text-xs font-bold uppercase text-slate-400 bg-black/20">
                 <th className="p-3">Variété de Riz</th>
                 <th className="p-3">Format</th>
-                {depots.map(d => (
+                {(userRestricted ? [userRestricted] : depots).map(d => (
                   <th key={d.id} className={`p-3 text-right ${userRestricted?.id === d.id ? 'text-amber-400 font-black' : ''}`}>
-                    {d.name} {userRestricted?.id === d.id ? '(Votre Dépôt)' : ''}
+                    {d.name} {userRestricted?.id === d.id ? '(Votre Dépôt Assigné)' : ''}
                   </th>
                 ))}
                 <th className="p-3 text-right font-black text-emerald-400">Total Sacs</th>
@@ -233,8 +233,9 @@ export default function StocksPage() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {products.map(p => {
+                const targetDepotsList = userRestricted ? [userRestricted] : depots;
                 let totalProdBags = 0;
-                depots.forEach(d => {
+                targetDepotsList.forEach(d => {
                   totalProdBags += (displayStocks[d.id] && displayStocks[d.id][p.id]) || 0;
                 });
 
@@ -242,7 +243,7 @@ export default function StocksPage() {
                   <tr key={p.id} className="hover:bg-white/5 transition-colors">
                     <td className="p-3 font-bold text-white">{p.title}</td>
                     <td className="p-3 text-slate-400">{p.weight} kg</td>
-                    {depots.map(d => {
+                    {targetDepotsList.map(d => {
                       const qty = (displayStocks[d.id] && displayStocks[d.id][p.id]) || 0;
                       return (
                         <td key={d.id} className={`p-3 text-right font-bold ${qty < p.alertThreshold ? 'text-red-400' : 'text-slate-200'} ${userRestricted?.id === d.id ? 'bg-amber-500/5' : ''}`}>

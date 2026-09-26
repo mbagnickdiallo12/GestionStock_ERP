@@ -1,13 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { Printer, X, Copy, Truck, FileText, Sparkles } from "lucide-react";
+import { Printer, X, Copy, Truck, FileText, Sparkles, Edit3, UserCheck, Phone, MapPin, Hash, Check } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 export const DeliveryNoteModal: React.FC = () => {
-  const { activeModal, closeModal, sales, movements, depots, settings, products, clients, currentUser } = useApp();
+  const { activeModal, openModal, closeModal, sales, movements, depots, settings, products, clients, currentUser, updateSale, showToast } = useApp();
   const [viewMode, setViewMode] = useState<"dual" | "bl_only">("dual");
+  const [showDriverEdit, setShowDriverEdit] = useState(false);
+
+  // Local driver info state
+  const [driverName, setDriverName] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
+  const [driverMatricule, setDriverMatricule] = useState("");
+  const [driverAddress, setDriverAddress] = useState("");
+  const [isSavingDriver, setIsSavingDriver] = useState(false);
 
   if (!activeModal || !activeModal.startsWith("bl-")) return null;
 
@@ -16,6 +24,44 @@ export const DeliveryNoteModal: React.FC = () => {
   const targetMvt = movements.find(m => m.ref === idRef || (m.dest && m.dest.includes(idRef)));
 
   if (!targetSale && !targetMvt && sales.length === 0) return null;
+
+  // Sync driver info from targetSale
+  useEffect(() => {
+    if (targetSale) {
+      setDriverName(targetSale.driverInfo?.fullName || "");
+      setDriverPhone(targetSale.driverInfo?.phone || "");
+      setDriverMatricule(targetSale.driverInfo?.matricule || "");
+      setDriverAddress(targetSale.driverInfo?.address || "");
+    } else if (targetMvt) {
+      setDriverName(targetMvt.operator || "");
+      setDriverPhone("");
+      setDriverMatricule("");
+      setDriverAddress("");
+    }
+  }, [targetSale, targetMvt]);
+
+  const handleSaveDriver = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!targetSale) return;
+
+    try {
+      setIsSavingDriver(true);
+      await updateSale(targetSale.id, {
+        driverInfo: {
+          fullName: driverName.trim(),
+          phone: driverPhone.trim(),
+          matricule: driverMatricule.trim(),
+          address: driverAddress.trim()
+        }
+      });
+      showToast("Informations chauffeur enregistrées sur le Bon de Livraison !", "success");
+      setShowDriverEdit(false);
+    } catch (err) {
+      showToast("Erreur lors de l'enregistrement des informations chauffeur.", "error");
+    } finally {
+      setIsSavingDriver(false);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -37,7 +83,7 @@ export const DeliveryNoteModal: React.FC = () => {
   const recipient = (targetSale ? (targetSale.clientName || "CLIENT COMPTOIR") : (targetMvt ? targetMvt.dest : "CLIENT GROSSISTE")).toUpperCase();
   const recipientPhone = matchedClient?.phone || "77 608 55 76";
 
-  const driverOrOperator = targetMvt ? targetMvt.operator : (currentUser?.name || "SUPERVISEUR").toUpperCase();
+  const displayedDriver = driverName || (targetMvt ? targetMvt.operator : (currentUser?.name || "SUPERVISEUR")).toUpperCase();
 
   const totalAmount = targetSale?.totalAmount || 0;
   const isPaid = targetSale ? (targetSale.status === 'Payé' || !targetSale.status || targetSale.paymentMode !== 'Credit') : true;
@@ -143,8 +189,39 @@ export const DeliveryNoteModal: React.FC = () => {
             </div>
           </div>
 
-          {/* View Mode Toggle Controls */}
-          <div className="flex items-center gap-2">
+          {/* Action & View Mode Toggle Controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            {targetSale && (
+              <button
+                type="button"
+                onClick={() => setShowDriverEdit(!showDriverEdit)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  showDriverEdit || driverName
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                    : "bg-slate-800 text-slate-300 hover:text-white border-white/10"
+                }`}
+                title="Saisir ou modifier les informations du chauffeur (Nom, Téléphone, Matricule, Adresse)"
+              >
+                <Truck className="w-3.5 h-3.5 text-amber-400" />
+                <span>{driverName ? `Chauffeur: ${driverName.split(' ')[0]}` : "Infos Chauffeur"}</span>
+              </button>
+            )}
+
+            {targetSale && (
+              <button
+                type="button"
+                onClick={() => {
+                  closeModal();
+                  setTimeout(() => openModal(`edit-sale-${targetSale.id}`), 100);
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-white/10 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Modifier les articles, le prix, la date ou les détails de cette vente"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Modifier Vente</span>
+              </button>
+            )}
+
             <div className="bg-slate-900 border border-white/10 rounded-xl p-1 flex items-center gap-1">
               <button
                 type="button"
@@ -157,7 +234,7 @@ export const DeliveryNoteModal: React.FC = () => {
                 title="Imprimer 2 Bons de Livraison identiques sur 1 seule feuille A4"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>2x BL (1 Feuille A4)</span>
+                <span>2x BL (A4)</span>
               </button>
 
               <button
@@ -171,7 +248,7 @@ export const DeliveryNoteModal: React.FC = () => {
                 title="Imprimer 1 seul Bon de Livraison plein format"
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>1 BL Plein Format</span>
+                <span>1 BL Plein</span>
               </button>
             </div>
 
@@ -180,7 +257,7 @@ export const DeliveryNoteModal: React.FC = () => {
               className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all"
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimer (1 Feuille A4)</span>
+              <span>Imprimer BL</span>
             </button>
 
             <button
@@ -191,6 +268,89 @@ export const DeliveryNoteModal: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Collapsible Driver Quick Edit Form (Interactive Bar) */}
+        {showDriverEdit && targetSale && (
+          <div className="bg-slate-900/95 border-b border-amber-500/30 p-4 no-print text-slate-200 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                <Truck className="w-4 h-4" />
+                <span>Renseigner les Informations du Chauffeur / Transporteur</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDriverEdit(false)}
+                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDriver} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Nom et Prénom</label>
+                <input
+                  type="text"
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value)}
+                  placeholder="Ex: Modou Fall"
+                  className="w-full bg-[#0f172a] border border-white/15 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Téléphone</label>
+                <input
+                  type="text"
+                  value={driverPhone}
+                  onChange={(e) => setDriverPhone(e.target.value)}
+                  placeholder="Ex: 77 123 45 67"
+                  className="w-full bg-[#0f172a] border border-white/15 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">N° Matricule / Camion</label>
+                <input
+                  type="text"
+                  value={driverMatricule}
+                  onChange={(e) => setDriverMatricule(e.target.value)}
+                  placeholder="Ex: DK-8945-AA"
+                  className="w-full bg-[#0f172a] border border-white/15 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Adresse</label>
+                <input
+                  type="text"
+                  value={driverAddress}
+                  onChange={(e) => setDriverAddress(e.target.value)}
+                  placeholder="Ex: Dakar Thiaroye"
+                  className="w-full bg-[#0f172a] border border-white/15 text-white text-xs px-2.5 py-1.5 rounded-lg outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={handleSaveDriver}
+                  disabled={isSavingDriver}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
+                >
+                  {isSavingDriver ? (
+                    <span>Enregistrement...</span>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Appliquer au BL</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Modal Body / Sheet Viewport */}
         <div className="p-3 sm:p-6 overflow-y-auto flex-1 bg-[#090d16]/80">
@@ -274,15 +434,33 @@ export const DeliveryNoteModal: React.FC = () => {
                 <div className="pt-0.5">
                   <div className="grid grid-cols-12 gap-2 items-start text-[9.5px]">
                     <div className="col-span-6 space-y-0.5">
-                      <div className="flex justify-between text-black font-semibold text-[9px]">
-                        <span>Livré par :</span>
-                        <span className="font-bold">{driverOrOperator}</span>
+                      <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                        <span>Livré par / Chauffeur :</span>
+                        <span className="font-bold truncate max-w-[110px]">{displayedDriver}</span>
                       </div>
-                      <div className="flex justify-between text-black font-semibold text-[9px]">
+                      {driverPhone && (
+                        <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                          <span>Tél. Chauffeur :</span>
+                          <span className="font-mono font-bold">{driverPhone}</span>
+                        </div>
+                      )}
+                      {driverMatricule && (
+                        <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                          <span>N° Matricule / Plaque :</span>
+                          <span className="font-mono font-bold">{driverMatricule}</span>
+                        </div>
+                      )}
+                      {driverAddress && (
+                        <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                          <span>Adresse :</span>
+                          <span className="font-semibold truncate max-w-[110px]">{driverAddress}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-black font-semibold text-[8.5px]">
                         <span>Dépôt Source :</span>
                         <span className="font-bold">{depotSource}</span>
                       </div>
-                      <div className="border border-black p-0.5 rounded text-[8px] text-slate-700 leading-tight">
+                      <div className="border border-black p-0.5 rounded text-[7.5px] text-slate-700 leading-tight mt-0.5">
                         <span className="font-bold text-black">Signature Client : </span>
                         Marchandise reçue conforme.
                       </div>
@@ -351,7 +529,7 @@ export const DeliveryNoteModal: React.FC = () => {
                       <tr className="border-b-2 border-black font-black uppercase bg-slate-100 text-black">
                         <th className="py-1 px-1 border-r border-black w-8 text-center">Qté</th>
                         <th className="py-1 px-1.5 border-r border-black">Désignation</th>
-                        <th className="py-1 px-1 border-r border-black w-14 text-right">PU</th>
+                        <th className="py-1 px-1.5 border-r border-black w-14 text-right">PU</th>
                         <th className="py-1 px-1.5 w-18 text-right">Total</th>
                       </tr>
                     </thead>
@@ -379,15 +557,33 @@ export const DeliveryNoteModal: React.FC = () => {
                 <div className="pt-0.5">
                   <div className="grid grid-cols-12 gap-2 items-start text-[9.5px]">
                     <div className="col-span-6 space-y-0.5">
-                      <div className="flex justify-between text-black font-semibold text-[9px]">
-                        <span>Livré par :</span>
-                        <span className="font-bold">{driverOrOperator}</span>
+                      <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                        <span>Livré par / Chauffeur :</span>
+                        <span className="font-bold truncate max-w-[110px]">{displayedDriver}</span>
                       </div>
-                      <div className="flex justify-between text-black font-semibold text-[9px]">
+                      {driverPhone && (
+                        <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                          <span>Tél. Chauffeur :</span>
+                          <span className="font-mono font-bold">{driverPhone}</span>
+                        </div>
+                      )}
+                      {driverMatricule && (
+                        <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                          <span>N° Matricule / Plaque :</span>
+                          <span className="font-mono font-bold">{driverMatricule}</span>
+                        </div>
+                      )}
+                      {driverAddress && (
+                        <div className="flex justify-between text-black font-semibold text-[8.5px]">
+                          <span>Adresse :</span>
+                          <span className="font-semibold truncate max-w-[110px]">{driverAddress}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-black font-semibold text-[8.5px]">
                         <span>Dépôt Source :</span>
                         <span className="font-bold">{depotSource}</span>
                       </div>
-                      <div className="border border-black p-0.5 rounded text-[8px] text-slate-700 leading-tight">
+                      <div className="border border-black p-0.5 rounded text-[7.5px] text-slate-700 leading-tight mt-0.5">
                         <span className="font-bold text-black">Signature Client : </span>
                         Marchandise reçue conforme.
                       </div>
@@ -451,12 +647,18 @@ export const DeliveryNoteModal: React.FC = () => {
                   <div className="border border-black rounded-lg p-2.5 space-y-1 bg-white">
                     <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-0.5 mb-1">ORIGINE & LOGISTIQUE</span>
                     <div className="flex justify-between"><span className="text-slate-800 font-semibold">Dépôt Expéditeur :</span><span className="font-bold">{depotSource}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Opérateur / Livré par :</span><span className="font-bold uppercase">{driverOrOperator}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Chauffeur / Livré par :</span><span className="font-bold uppercase">{displayedDriver}</span></div>
+                    {driverPhone && <div className="flex justify-between"><span className="text-slate-800 font-semibold">Téléphone Chauffeur :</span><span className="font-mono font-bold">{driverPhone}</span></div>}
+                    {driverMatricule && <div className="flex justify-between"><span className="text-slate-800 font-semibold">N° Matricule / Plaque :</span><span className="font-mono font-bold">{driverMatricule}</span></div>}
+                    {driverAddress && <div className="flex justify-between"><span className="text-slate-800 font-semibold">Adresse Chauffeur :</span><span className="font-semibold">{driverAddress}</span></div>}
                   </div>
                   <div className="border-2 border-black rounded-lg p-2.5 space-y-1 bg-white">
                     <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-0.5 mb-1">DESTINATAIRE / RÉCEPTIONNAIRE</span>
                     <div className="flex justify-between items-baseline"><span className="text-slate-800 font-semibold">Client :</span><span className="font-black text-sm uppercase text-black">{recipient}</span></div>
                     <div className="flex justify-between"><span className="text-slate-800 font-semibold">Téléphone :</span><span className="font-mono font-bold text-black">{recipientPhone}</span></div>
+                    {matchedClient?.address && (
+                      <div className="flex justify-between"><span className="text-slate-800 font-semibold">Adresse Livraison :</span><span className="font-semibold text-black">{matchedClient.address}</span></div>
+                    )}
                   </div>
                 </div>
               </div>

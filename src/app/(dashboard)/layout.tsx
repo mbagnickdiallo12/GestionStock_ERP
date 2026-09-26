@@ -38,6 +38,7 @@ import { UserProfileModal } from "@/components/modals/UserProfileModal";
 import { EditProductModal } from "@/components/modals/EditProductModal";
 import { EditPurchaseModal } from "@/components/modals/EditPurchaseModal";
 import { PrintFinancialReportModal } from "@/components/modals/PrintFinancialReportModal";
+import { EditSaleModal } from "@/components/modals/EditSaleModal";
 import { ConfirmModal } from "@/components/modals/ConfirmModal";
 
 import { useApp } from "@/context/AppContext";
@@ -120,6 +121,7 @@ function ProtectedDashboardContent({ children }: { children: React.ReactNode }) 
       <UserProfileModal />
       <EditProductModal />
       <EditPurchaseModal />
+      <EditSaleModal />
       <ConfirmModal />
     </div>
   );

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { 
   Plus, Search, FileText, CheckCircle2, Clock, Truck, 
   Building2, Ban, TrendingUp, X, Banknote,
-  Smartphone, Building, Sparkles
+  Smartphone, Building, Sparkles, Edit3
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber, canManage, getUserAssignedDepot, isMatchingDepot } from "@/lib/utils";
@@ -488,6 +488,18 @@ export default function VentesPage() {
                             <Truck className="w-3.5 h-3.5 text-slate-400" />
                             <span>BL</span>
                           </button>
+
+                          {/* Modifier button */}
+                          {!isCancelled && canManage(currentUser) && (
+                            <button 
+                              onClick={() => openModal(`edit-sale-${s.id}`)}
+                              className="bg-slate-800 hover:bg-emerald-700 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-xs font-semibold border border-white/10 flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm"
+                              title="Modifier la facture (articles, prix, date, client, chauffeur)"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Modifier</span>
+                            </button>
+                          )}
 
                           {/* Cancel button */}
                           {!isCancelled && canManage(currentUser) && (

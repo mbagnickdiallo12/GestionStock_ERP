@@ -1,31 +1,41 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Receipt, Search, Building2, Truck, Wallet, ShieldAlert, ArrowDownRight, Layers } from "lucide-react";
+import { Plus, Receipt, Search, Building2, Truck, Wallet, ShieldAlert, ArrowDownRight, Layers, Lock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Modal } from "@/components/ui/Modal";
 import { Expense } from "@/types";
-import { formatFCFA, formatNumber, canCreate, isMatchingDepot } from "@/lib/utils";
+import { formatFCFA, formatNumber, canCreate, isMatchingDepot, getUserAssignedDepot } from "@/lib/utils";
 import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 
 export default function DepensesPage() {
   const { expenses, depots, activeDepotId, addExpense, openModal, closeModal, currentUser, isLoading } = useApp();
 
+  const userRestricted = getUserAssignedDepot(currentUser, depots);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [catFilter, setCatFilter] = useState("all");
-  const [depotFilter, setDepotFilter] = useState(activeDepotId);
+  const [depotFilter, setDepotFilter] = useState(() => {
+    if (userRestricted) return userRestricted.id;
+    return activeDepotId;
+  });
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Sync depotFilter when activeDepotId changes from the global header
+  // Sync depotFilter when activeDepotId changes from the global header, or lock to user's depot
   useEffect(() => {
-    setDepotFilter(activeDepotId);
-  }, [activeDepotId]);
+    if (userRestricted) {
+      setDepotFilter(userRestricted.id);
+    } else {
+      setDepotFilter(activeDepotId);
+    }
+  }, [activeDepotId, userRestricted]);
 
   // Modal form states
   const [depotId, setDepotId] = useState(() => {
+    if (userRestricted) return userRestricted.id;
     if (activeDepotId !== "all" && depots.some(d => d.id === activeDepotId)) {
       return activeDepotId;
     }
@@ -36,14 +46,16 @@ export default function DepensesPage() {
   const [beneficiary, setBeneficiary] = useState("Équipe Manœuvres Port");
   const [desc, setDesc] = useState("Frais déchargement conteneur");
 
-  // Keep modal depotId in sync when depots or activeDepotId change
+  // Keep modal depotId in sync
   useEffect(() => {
-    if (activeDepotId !== "all" && depots.some(d => d.id === activeDepotId)) {
+    if (userRestricted) {
+      setDepotId(userRestricted.id);
+    } else if (activeDepotId !== "all" && depots.some(d => d.id === activeDepotId)) {
       setDepotId(activeDepotId);
     } else if (depots.length > 0 && !depots.some(d => d.id === depotId)) {
       setDepotId(depots[0].id);
     }
-  }, [activeDepotId, depots]);
+  }, [activeDepotId, depots, userRestricted]);
 
   if (isLoading) {
     return (
@@ -63,14 +75,16 @@ export default function DepensesPage() {
     );
   }
 
-  // Filtered expenses based on Search, Category, and Depot
+  // Filtered expenses based on Search, Category, and strictly isolated Depot
+  const effectiveDepotFilter = userRestricted ? userRestricted.id : depotFilter;
+
   const filteredExpenses = expenses.filter(e => {
     const matchSearch = e.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         e.desc.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         e.beneficiary.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         e.user.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCat = catFilter === "all" || e.category === catFilter;
-    const matchDepot = isMatchingDepot(e.depotId, depotFilter, depots);
+    const matchDepot = isMatchingDepot(e.depotId, effectiveDepotFilter, depots);
     return matchSearch && matchCat && matchDepot;
   });
 
@@ -91,13 +105,15 @@ export default function DepensesPage() {
     .filter(e => ["Loyer", "Electricite", "Gardiennage", "Autre"].includes(e.category))
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const currentDepotObj = depots.find(d => d.id === depotFilter);
-  const selectedDepotLabel = depotFilter === "all" ? "Tous les Dépôts" : (currentDepotObj?.name || "Dépôt sélectionné");
+  const currentDepotObj = userRestricted || depots.find(d => d.id === effectiveDepotFilter);
+  const selectedDepotLabel = userRestricted 
+    ? userRestricted.name 
+    : (effectiveDepotFilter === "all" ? "Tous les Dépôts" : (currentDepotObj?.name || "Dépôt sélectionné"));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (amount <= 0) return;
-    const selectedDepotId = depotId || (depots[0] ? depots[0].id : "");
+    const selectedDepotId = userRestricted ? userRestricted.id : (depotId || (depots[0] ? depots[0].id : ""));
     addExpense({
       depotId: selectedDepotId,
       category,
@@ -109,7 +125,9 @@ export default function DepensesPage() {
   };
 
   const handleOpenAddModal = () => {
-    if (depotFilter !== "all" && depots.some(d => d.id === depotFilter)) {
+    if (userRestricted) {
+      setDepotId(userRestricted.id);
+    } else if (depotFilter !== "all" && depots.some(d => d.id === depotFilter)) {
       setDepotId(depotFilter);
     } else if (activeDepotId !== "all" && depots.some(d => d.id === activeDepotId)) {
       setDepotId(activeDepotId);
@@ -126,13 +144,18 @@ export default function DepensesPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-white tracking-tight">Dépenses Opérationnelles & Charges Dépôt</h1>
-            {depotFilter !== "all" && (
-              <span className="bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                📍 {selectedDepotLabel}
+            {selectedDepotLabel && (
+              <span className="bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                {userRestricted && <Lock className="w-3 h-3 text-amber-400" />}
+                <span>📍 {selectedDepotLabel}</span>
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-400 mt-1">Manutention (manœuvres), transport camion, carburant et charges fixes d'entrepôt.</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {userRestricted 
+              ? `Gestion des dépenses et charges opérationnelles affectées exclusivement au ${userRestricted.name}.`
+              : "Manutention (manœuvres), transport camion, carburant et charges fixes d'entrepôt."}
+          </p>
         </div>
         {canCreate(currentUser, 'depenses') && (
           <button 
@@ -157,7 +180,7 @@ export default function DepensesPage() {
           <div className="text-2xl font-black text-white">{formatFCFA(totalExpensesAmount)}</div>
           <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
             <span>{filteredExpenses.length} dépense(s) enregistrée(s)</span>
-            <span className="text-amber-400 font-bold">{depotFilter === "all" ? "Global" : "Dépôt actif"}</span>
+            <span className="text-amber-400 font-bold">{userRestricted ? userRestricted.name : (depotFilter === "all" ? "Global" : "Dépôt actif")}</span>
           </div>
         </div>
 
@@ -212,20 +235,28 @@ export default function DepensesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Depot Filter */}
-          <div className="flex items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-2 rounded-xl">
-            <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <select
-              value={depotFilter}
-              onChange={(e) => setDepotFilter(e.target.value)}
-              className="bg-transparent text-white text-sm outline-none cursor-pointer"
-            >
-              <option value="all" className="bg-[#1e293b]">📍 Tous les Dépôts</option>
-              {depots.map(d => (
-                <option key={d.id} value={d.id} className="bg-[#1e293b]">📍 {d.name}</option>
-              ))}
-            </select>
-          </div>
+          {/* Depot Filter: Locked for restricted users, selector for admins */}
+          {userRestricted ? (
+            <div className="flex items-center gap-2 bg-[#0f172a] border border-amber-500/30 px-3 py-2 rounded-xl shadow-sm" title={`Compte assigné exclusivement au ${userRestricted.name}`}>
+              <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-white text-sm font-bold truncate">📍 {userRestricted.name}</span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/30 ml-1">Affecté</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-2 rounded-xl">
+              <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <select
+                value={depotFilter}
+                onChange={(e) => setDepotFilter(e.target.value)}
+                className="bg-transparent text-white text-sm outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-[#1e293b]">📍 Tous les Dépôts</option>
+                {depots.map(d => (
+                  <option key={d.id} value={d.id} className="bg-[#1e293b]">📍 {d.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Category Filter */}
           <select
@@ -302,7 +333,7 @@ export default function DepensesPage() {
                   <td colSpan={8} className="p-8 text-center text-slate-400">
                     <Receipt className="w-10 h-10 mx-auto mb-2 text-slate-500/50" />
                     <p className="font-semibold">Aucune dépense trouvée pour ce dépôt ou ce critère.</p>
-                    <p className="text-xs text-slate-500 mt-1">Sélectionnez un autre dépôt ou cliquez sur "Enregistrer Dépense" pour en ajouter une.</p>
+                    <p className="text-xs text-slate-500 mt-1">Sélectionnez un autre critère ou cliquez sur "Enregistrer Dépense" pour en ajouter une.</p>
                   </td>
                 </tr>
               )}
@@ -343,14 +374,21 @@ export default function DepensesPage() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold text-slate-400 block mb-1">Dépôt Affecté *</label>
-            <select
-              value={depotId}
-              onChange={(e) => setDepotId(e.target.value)}
-              className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer"
-              required
-            >
-              {depots.map(d => <option key={d.id} value={d.id} className="bg-[#1e293b]">{d.name}</option>)}
-            </select>
+            {userRestricted ? (
+              <div className="w-full bg-[#0f172a] border border-amber-500/40 text-white text-sm px-3 py-2 rounded-xl flex items-center justify-between">
+                <span className="font-bold">📍 {userRestricted.name}</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded">Affecté</span>
+              </div>
+            ) : (
+              <select
+                value={depotId}
+                onChange={(e) => setDepotId(e.target.value)}
+                className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer"
+                required
+              >
+                {depots.map(d => <option key={d.id} value={d.id} className="bg-[#1e293b]">{d.name}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-400 block mb-1">Catégorie *</label>

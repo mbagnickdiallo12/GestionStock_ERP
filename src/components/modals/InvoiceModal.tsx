@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Printer, X, Copy, FileText, Truck, Sparkles } from "lucide-react";
+import { Printer, X, Copy, FileText, Truck, Sparkles, Edit3 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatNumber, numberToWordsFR } from "@/lib/utils";
 
 export const InvoiceModal: React.FC = () => {
-  const { activeModal, closeModal, sales, depots, settings, movements, products, clients, currentUser } = useApp();
+  const { activeModal, openModal, closeModal, sales, depots, settings, movements, products, clients, currentUser } = useApp();
   const [viewMode, setViewMode] = useState<"dual" | "invoice_only">("dual");
 
   if (!activeModal || !activeModal.startsWith("invoice-")) return null;
@@ -142,6 +142,19 @@ export const InvoiceModal: React.FC = () => {
 
           {/* View Mode Toggle Controls */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                closeModal();
+                setTimeout(() => openModal(`edit-sale-${sale.id}`), 100);
+              }}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-white/10 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Modifier les articles, le prix, la date ou les détails de cette facture"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Modifier Facture</span>
+            </button>
+
             <div className="bg-slate-900 border border-white/10 rounded-xl p-1 flex items-center gap-1">
               <button
                 type="button"

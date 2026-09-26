@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { Depot, Product, StockMatrix, Sale, StockMovement, Purchase, Supplier, Client, Expense, Employee, UserAccount, CompanySettings, SaleItem, AuditLog, DebtTransaction, InventorySession, Category, CashSession, BackupVersion } from "@/types";
+import { Depot, Product, StockMatrix, Sale, StockMovement, Purchase, Supplier, Client, Expense, Employee, UserAccount, CompanySettings, SaleItem, AuditLog, DebtTransaction, InventorySession, Category, CashSession, BackupVersion, DriverInfo } from "@/types";
 import { INITIAL_SETTINGS, INITIAL_DEPOTS, INITIAL_PRODUCTS, INITIAL_STOCKS, INITIAL_SALES, INITIAL_MOVEMENTS, INITIAL_PURCHASES, INITIAL_SUPPLIERS, INITIAL_CLIENTS, INITIAL_DEBT_TRANSACTIONS, INITIAL_INVENTORIES, INITIAL_EXPENSES, INITIAL_EMPLOYEES, INITIAL_USERS, INITIAL_AUDIT_LOGS, INITIAL_CATEGORIES, INITIAL_CASH_SESSIONS } from "@/lib/mockData";
 import { formatFCFA, formatNumber, isMatchingDepot, getUserAssignedDepot } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -66,8 +66,9 @@ interface AppContextType {
   addToCart: (productId: string) => void;
   updateCartQty: (productId: string, delta: number) => void;
   setCartItemQty: (productId: string, qty: number) => void;
+  updateCartItemPrice: (productId: string, price: number) => void;
   clearCart: () => void;
-  processCheckout: (clientName: string, paymentMode: Sale['paymentMode']) => void;
+  processCheckout: (clientName: string, paymentMode: Sale['paymentMode'], customDate?: string, driverInfo?: DriverInfo) => Promise<void>;
 
   activeModal: string | null;
   openModal: (modalId: string) => void;
@@ -129,6 +130,7 @@ interface AppContextType {
   addStockMovement: (mvt: Omit<StockMovement, 'ref' | 'date'> & { depotId?: string; productId?: string; customDate?: string }) => void;
   transferStock: (srcId: string, destId: string, prodId: string, qty: number, truck: string) => void;
   addExpense: (exp: Omit<Expense, 'id' | 'date'>) => void;
+  updateSale: (saleId: string, updatedData: Partial<Sale>) => Promise<void>;
   cancelSale: (saleId: string, reason?: string) => Promise<void>;
   getUserRestrictedDepot: () => Depot | null;
 
@@ -1153,9 +1155,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }).filter(Boolean) as CartItem[]);
   };
 
+  const updateCartItemPrice = (productId: string, price: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.productId === productId) {
+        const safePrice = isNaN(price) ? 0 : Math.max(0, price);
+        return { ...item, price: safePrice };
+      }
+      return item;
+    }));
+  };
+
   const clearCart = () => setCart([]);
 
-  const processCheckout = async (clientName: string, paymentMode: Sale['paymentMode']) => {
+  const processCheckout = async (
+    clientName: string, 
+    paymentMode: Sale['paymentMode'], 
+    customDate?: string, 
+    driverInfo?: DriverInfo
+  ) => {
     if (cart.length === 0) {
       showToast("Le panier est vide. Veuillez sélectionner des produits.", "error");
       return;
@@ -1187,15 +1204,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const totalAmt = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const totalBagsCount = cart.reduce((sum, i) => sum + i.qty, 0);
 
+    const saleDate = customDate && customDate.trim() 
+      ? customDate.trim() 
+      : new Date().toISOString().slice(0, 16).replace("T", " ");
+
     const newSale: Sale = {
       id: invoiceNum,
-      date: new Date().toISOString().slice(0, 16).replace("T", " "),
+      date: saleDate,
       depotId: depotIdToDeduct,
       clientName: clientName || "Client Comptoir",
       items: [...cart],
       totalAmount: totalAmt,
       paymentMode: paymentMode,
-      status: paymentMode === "Credit" ? "En attente" : "Payé"
+      status: paymentMode === "Credit" ? "En attente" : "Payé",
+      driverInfo: driverInfo && driverInfo.fullName ? driverInfo : undefined
     };
 
     setSales(prev => {
@@ -2695,6 +2717,138 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUser, depots, activeDepotId]);
 
+  const updateSale = async (saleId: string, updatedData: Partial<Sale>) => {
+    const existingSale = sales.find(s => s.id === saleId);
+    if (!existingSale) {
+      showToast("Vente introuvable.", "error");
+      return;
+    }
+
+    const oldDepotId = existingSale.depotId;
+    const newDepotId = updatedData.depotId || oldDepotId;
+    const oldItems = existingSale.items || [];
+    const newItems = updatedData.items || oldItems;
+
+    // 1. Stock adjustments
+    setStocks(prev => {
+      const updated = { ...prev };
+      if (!updated[oldDepotId]) updated[oldDepotId] = {};
+      if (!updated[newDepotId]) updated[newDepotId] = {};
+
+      if (oldDepotId === newDepotId) {
+        const allProductIds = Array.from(new Set([
+          ...oldItems.map(i => i.productId),
+          ...newItems.map(i => i.productId)
+        ]));
+
+        allProductIds.forEach(pId => {
+          const oldQty = oldItems.filter(i => i.productId === pId).reduce((acc, i) => acc + i.qty, 0);
+          const newQty = newItems.filter(i => i.productId === pId).reduce((acc, i) => acc + i.qty, 0);
+          const delta = oldQty - newQty; // positive = return to stock, negative = deduct from stock
+          const cur = updated[oldDepotId][pId] || 0;
+          const finalStock = Math.max(0, cur + delta);
+          updated[oldDepotId][pId] = finalStock;
+
+          supabase.from('product_stocks').upsert({
+            depot_id: oldDepotId,
+            product_id: pId,
+            quantity: finalStock
+          }, { onConflict: 'depot_id,product_id' }).then();
+        });
+      } else {
+        // Depot changed: re-credit old depot completely, deduct new depot completely
+        oldItems.forEach(i => {
+          const cur = updated[oldDepotId][i.productId] || 0;
+          updated[oldDepotId][i.productId] = cur + i.qty;
+          supabase.from('product_stocks').upsert({
+            depot_id: oldDepotId,
+            product_id: i.productId,
+            quantity: cur + i.qty
+          }, { onConflict: 'depot_id,product_id' }).then();
+        });
+        newItems.forEach(i => {
+          const cur = updated[newDepotId][i.productId] || 0;
+          const finalStock = Math.max(0, cur - i.qty);
+          updated[newDepotId][i.productId] = finalStock;
+          supabase.from('product_stocks').upsert({
+            depot_id: newDepotId,
+            product_id: i.productId,
+            quantity: finalStock
+          }, { onConflict: 'depot_id,product_id' }).then();
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Stocks", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    // 2. Calculate final amount
+    const calculatedTotal = newItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
+    const finalTotalAmount = updatedData.totalAmount !== undefined ? updatedData.totalAmount : calculatedTotal;
+
+    const mergedSale: Sale = {
+      ...existingSale,
+      ...updatedData,
+      items: newItems,
+      totalAmount: finalTotalAmount
+    };
+
+    // 3. Client credit adjustment
+    const oldClientName = existingSale.clientName;
+    const newClientName = mergedSale.clientName;
+    const oldWasCredit = existingSale.paymentMode === 'Credit' && existingSale.status !== 'Annulé';
+    const newIsCredit = mergedSale.paymentMode === 'Credit' && mergedSale.status !== 'Annulé';
+
+    if (oldWasCredit && oldClientName) {
+      const oldCli = clients.find(c => c.name.toLowerCase() === oldClientName.toLowerCase());
+      if (oldCli) {
+        const revPurchases = Math.max(0, oldCli.totalPurchases - existingSale.totalAmount);
+        const revBalance = Math.max(0, oldCli.balance - existingSale.totalAmount);
+        setClients(prev => prev.map(c => c.id === oldCli.id ? { ...c, totalPurchases: revPurchases, balance: revBalance } : c));
+        try {
+          supabase.from('clients').update({ total_purchases: revPurchases, balance: revBalance }).eq('id', oldCli.id).then();
+        } catch (e) {}
+      }
+    }
+    if (newIsCredit && newClientName) {
+      const newCli = clients.find(c => c.name.toLowerCase() === newClientName.toLowerCase());
+      if (newCli) {
+        const addPurchases = newCli.totalPurchases + finalTotalAmount;
+        const addBalance = newCli.balance + finalTotalAmount;
+        setClients(prev => prev.map(c => c.id === newCli.id ? { ...c, totalPurchases: addPurchases, balance: addBalance } : c));
+        try {
+          supabase.from('clients').update({ total_purchases: addPurchases, balance: addBalance }).eq('id', newCli.id).then();
+        } catch (e) {}
+      }
+    }
+
+    // 4. Update sales state
+    setSales(prev => {
+      const next = prev.map(s => s.id === saleId ? mergedSale : s);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_Sales", JSON.stringify(next));
+      }
+      return next;
+    });
+
+    try {
+      await supabase.from('sales').update({
+        depot_id: mergedSale.depotId,
+        client_name: mergedSale.clientName,
+        total_amount: mergedSale.totalAmount,
+        payment_mode: mergedSale.paymentMode,
+        status: mergedSale.status,
+        created_at: mergedSale.date
+      }).eq('id', saleId);
+    } catch (e) {}
+
+    logActivity("VENTE", `Modification de la facture ${saleId} (${formatFCFA(finalTotalAmount)}) pour ${mergedSale.clientName}`);
+    showToast(`Vente ${saleId} mise à jour avec succès !`, "success");
+    closeModal();
+  };
+
   const cancelSale = async (saleId: string, reason?: string) => {
     const targetSale = sales.find(s => s.id === saleId);
     if (!targetSale) {
@@ -2827,12 +2981,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sidebarCollapsed, setSidebarCollapsed,
       settings, updateSettings, categories, depots, products, stocks, sales, cashSessions, movements, purchases, suppliers, clients, debtTransactions, inventories, expenses, employees, users, auditLogs,
       logActivity, clearAuditLogs,
-      cart, addToCart, updateCartQty, setCartItemQty, clearCart, processCheckout,
+      cart, addToCart, updateCartQty, setCartItemQty, updateCartItemPrice, clearCart, processCheckout,
       activeModal, openModal, closeModal,
       confirmState, askConfirm, closeConfirm,
       toasts, showToast,
       openCashSession, closeCashSession,
-      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, updateProductStock, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense, cancelSale, getUserRestrictedDepot,
+      addCategory, updateCategory, deleteCategory, addDepot, updateDepot, deleteDepot, addProduct, updateProduct, updateProductStock, deleteProduct, addPurchase, updatePurchase, deletePurchase, addSupplier, updateSupplier, deleteSupplier, addClient, updateClient, deleteClient, settleClientDebt, addInventorySession, applyInventoryAdjustment, addEmployee, updateEmployee, deleteEmployee, grantSalaryAdvance, paySalary, addUser, updateUser, deleteUser, resetPassword, currentUser, loginUser, logoutUser, addStockMovement, transferStock, addExpense, updateSale, cancelSale, getUserRestrictedDepot,
       backupVersions, createBackupSnapshot, restoreBackupVersion, deleteBackupVersion, importBackupJSON, resetSystemWithAutoBackup
     }}>
       {children}
