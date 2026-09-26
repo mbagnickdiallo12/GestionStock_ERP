@@ -2026,6 +2026,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       recorded_by: newTx.recordedBy
     });
 
+    if (paymentMode === "Espece") {
+      setCashSessions(prev => {
+        const openIdx = prev.findIndex(s => s.status === "Ouverte");
+        if (openIdx === -1) return prev;
+        const copy = [...prev];
+        const sess = { ...copy[openIdx] };
+        sess.cashSales += paymentAmount;
+        sess.expectedCash += paymentAmount;
+        copy[openIdx] = sess;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("RizStock_CashSessions", JSON.stringify(copy));
+        }
+        supabase.from('cash_sessions').update({
+          cash_sales: sess.cashSales,
+          expected_cash: sess.expectedCash
+        }).eq('id', sess.id).then();
+        return copy;
+      });
+    }
+
     logActivity("CREANCE", `Recouvrement de créance client de ${formatFCFA(paymentAmount)} par ${paymentMode} pour "${target.name}" (Solde restant: ${formatFCFA(newBalance)})`);
     showToast(`Règlement de ${formatFCFA(paymentAmount)} enregistré avec succès !`, "success");
     refreshFromSupabase();
@@ -2691,6 +2711,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       user_name: newExp.user
     });
 
+    // Also deduct expense from active open cash session if available
+    setCashSessions(prev => {
+      const openIdx = prev.findIndex(s => s.status === "Ouverte");
+      if (openIdx === -1) return prev;
+      const copy = [...prev];
+      const sess = { ...copy[openIdx] };
+      sess.totalExpenses = (sess.totalExpenses || 0) + Number(expData.amount);
+      sess.expectedCash = Math.max(0, (sess.expectedCash || 0) - Number(expData.amount));
+      copy[openIdx] = sess;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("RizStock_CashSessions", JSON.stringify(copy));
+      }
+      supabase.from('cash_sessions').update({
+        total_expenses: sess.totalExpenses,
+        expected_cash: sess.expectedCash
+      }).eq('id', sess.id).then();
+      return copy;
+    });
+
     if (error) {
       console.error("Supabase Expense error:", error);
       showToast(`Erreur Supabase Dépenses: ${error.message}`, "error");
@@ -2749,7 +2788,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const finalStock = Math.max(0, cur + delta);
           updated[oldDepotId][pId] = finalStock;
 
-          supabase.from('product_stocks').upsert({
+          supabase.from('depot_stocks').upsert({
             depot_id: oldDepotId,
             product_id: pId,
             quantity: finalStock
@@ -2760,7 +2799,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         oldItems.forEach(i => {
           const cur = updated[oldDepotId][i.productId] || 0;
           updated[oldDepotId][i.productId] = cur + i.qty;
-          supabase.from('product_stocks').upsert({
+          supabase.from('depot_stocks').upsert({
             depot_id: oldDepotId,
             product_id: i.productId,
             quantity: cur + i.qty
@@ -2770,7 +2809,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const cur = updated[newDepotId][i.productId] || 0;
           const finalStock = Math.max(0, cur - i.qty);
           updated[newDepotId][i.productId] = finalStock;
-          supabase.from('product_stocks').upsert({
+          supabase.from('depot_stocks').upsert({
             depot_id: newDepotId,
             product_id: i.productId,
             quantity: finalStock
@@ -2839,13 +2878,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         client_name: mergedSale.clientName,
         total_amount: mergedSale.totalAmount,
         payment_mode: mergedSale.paymentMode,
-        status: mergedSale.status,
-        created_at: mergedSale.date
+        status: mergedSale.status
       }).eq('id', saleId);
-    } catch (e) {}
+
+      // Delete & Re-insert sale_items
+      await supabase.from('sale_items').delete().eq('sale_id', saleId);
+      if (newItems.length > 0) {
+        const saleItemsPayload = newItems.map(item => {
+          const matchedProd = products.find(p => p.id === item.productId || p.title.toLowerCase() === item.title.toLowerCase());
+          return {
+            sale_id: saleId,
+            product_id: matchedProd ? matchedProd.id : item.productId,
+            product_title: matchedProd ? matchedProd.title : item.title,
+            quantity: item.qty,
+            unit_price: item.price
+          };
+        });
+        await supabase.from('sale_items').insert(saleItemsPayload);
+      }
+    } catch (e) {
+      console.error("Error updating sale in Supabase:", e);
+    }
 
     logActivity("VENTE", `Modification de la facture ${saleId} (${formatFCFA(finalTotalAmount)}) pour ${mergedSale.clientName}`);
     showToast(`Vente ${saleId} mise à jour avec succès !`, "success");
+    await refreshFromSupabase();
     closeModal();
   };
 
@@ -2885,7 +2942,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const currentQty = updated[targetDepotId][prodId] || 0;
         updated[targetDepotId][prodId] = currentQty + item.qty;
 
-        supabase.from('product_stocks').upsert({
+        supabase.from('depot_stocks').upsert({
           depot_id: targetDepotId,
           product_id: prodId,
           quantity: currentQty + item.qty
@@ -2968,6 +3025,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     logActivity("VENTE", `Annulation de la vente ${targetSale.id} (${formatFCFA(targetSale.totalAmount)}) - Stock réintégré au ${targetDepot?.name || targetDepotId}. Raison: ${reason || 'Erreur de saisie / Annulation'}`);
     showToast(`Vente ${targetSale.id} annulée ! Les sacs de riz ont été réintégrés dans le stock.`, "success");
+    await refreshFromSupabase();
     closeModal();
   };
 
