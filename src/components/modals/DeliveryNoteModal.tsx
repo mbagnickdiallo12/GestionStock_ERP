@@ -17,15 +17,12 @@ export const DeliveryNoteModal: React.FC = () => {
   const [driverAddress, setDriverAddress] = useState("");
   const [isSavingDriver, setIsSavingDriver] = useState(false);
 
-  if (!activeModal || !activeModal.startsWith("bl-")) return null;
-
-  const idRef = activeModal.replace("bl-", "");
+  const isBLModal = Boolean(activeModal && activeModal.startsWith("bl-"));
+  const idRef = activeModal && activeModal.startsWith("bl-") ? activeModal.replace("bl-", "") : "";
   const targetSale = sales.find(s => s.id === idRef);
   const targetMvt = movements.find(m => m.ref === idRef || (m.dest && m.dest.includes(idRef)));
 
-  if (!targetSale && !targetMvt && sales.length === 0) return null;
-
-  // Sync driver info from targetSale
+  // Sync driver info from targetSale (must run unconditionally before any early return)
   useEffect(() => {
     if (targetSale) {
       setDriverName(targetSale.driverInfo?.fullName || "");
@@ -37,8 +34,16 @@ export const DeliveryNoteModal: React.FC = () => {
       setDriverPhone("");
       setDriverMatricule("");
       setDriverAddress("");
+    } else {
+      setDriverName("");
+      setDriverPhone("");
+      setDriverMatricule("");
+      setDriverAddress("");
     }
   }, [targetSale, targetMvt]);
+
+  if (!isBLModal) return null;
+  if (!targetSale && !targetMvt && sales.length === 0) return null;
 
   const handleSaveDriver = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -415,8 +420,8 @@ export const DeliveryNoteModal: React.FC = () => {
                         <tr key={idx} className="h-5">
                           <td className="py-0.5 px-1 border-r border-black text-center font-mono font-bold text-black">{it.qty}</td>
                           <td className="py-0.5 px-1.5 border-r border-black font-bold uppercase text-black text-[9.5px]">{it.title}</td>
-                          <td className="py-0.5 px-1 border-r border-black text-right font-mono font-bold text-black">{formatNumber(it.price || 8250)}</td>
-                          <td className="py-0.5 px-1.5 text-right font-mono font-bold text-black">{formatNumber((it.price || 8250) * it.qty)}</td>
+                          <td className="py-0.5 px-1 border-r border-black text-right font-mono font-bold text-black">{targetSale?.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price || 8250)}</td>
+                          <td className="py-0.5 px-1.5 text-right font-mono font-bold text-black">{targetSale?.paymentMode === 'Cadeau' ? "0" : formatNumber((it.price || 8250) * it.qty)}</td>
                         </tr>
                       ))}
                       {Array.from({ length: Math.max(0, 5 - deliveryItems.length) }).map((_, i) => (
@@ -538,8 +543,8 @@ export const DeliveryNoteModal: React.FC = () => {
                         <tr key={idx} className="h-5">
                           <td className="py-0.5 px-1 border-r border-black text-center font-mono font-bold text-black">{it.qty}</td>
                           <td className="py-0.5 px-1.5 border-r border-black font-bold uppercase text-black text-[9.5px]">{it.title}</td>
-                          <td className="py-0.5 px-1 border-r border-black text-right font-mono font-bold text-black">{formatNumber(it.price || 8250)}</td>
-                          <td className="py-0.5 px-1.5 text-right font-mono font-bold text-black">{formatNumber((it.price || 8250) * it.qty)}</td>
+                          <td className="py-0.5 px-1 border-r border-black text-right font-mono font-bold text-black">{targetSale?.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price || 8250)}</td>
+                          <td className="py-0.5 px-1.5 text-right font-mono font-bold text-black">{targetSale?.paymentMode === 'Cadeau' ? "0" : formatNumber((it.price || 8250) * it.qty)}</td>
                         </tr>
                       ))}
                       {Array.from({ length: Math.max(0, 5 - deliveryItems.length) }).map((_, i) => (

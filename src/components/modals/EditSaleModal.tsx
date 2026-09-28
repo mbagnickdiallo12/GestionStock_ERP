@@ -108,7 +108,8 @@ export const EditSaleModal: React.FC = () => {
     setItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const totalAmount = items.reduce((acc, it) => acc + (it.price * it.qty), 0);
+  const isGift = paymentMode === "Cadeau";
+  const totalAmount = isGift ? 0 : items.reduce((acc, it) => acc + (it.price * it.qty), 0);
   const totalBags = items.reduce((acc, it) => acc + it.qty, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,10 +129,10 @@ export const EditSaleModal: React.FC = () => {
         date: date.trim(),
         depotId: userRestricted ? userRestricted.id : depotId,
         clientName: clientName.trim(),
-        items,
-        totalAmount,
+        items: isGift ? items.map(it => ({ ...it, price: 0 })) : items,
+        totalAmount: isGift ? 0 : totalAmount,
         paymentMode,
-        status,
+        status: isGift ? "Payé" : status,
         driverInfo: driverInfo.fullName.trim() ? driverInfo : undefined
       });
     } catch (err) {
@@ -261,6 +262,7 @@ export const EditSaleModal: React.FC = () => {
               <option value="Virement" className="bg-[#1e293b]">🏦 Virement Bancaire</option>
               <option value="Cheque" className="bg-[#1e293b]">📜 Chèque Bancaire</option>
               <option value="Credit" className="bg-[#1e293b]">⏳ À Crédit (Créance client)</option>
+              <option value="Cadeau" className="bg-[#1e293b]">🎁 Cadeau / Offert (Non comptabilisé)</option>
             </select>
           </div>
 

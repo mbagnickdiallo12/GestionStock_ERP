@@ -275,10 +275,10 @@ export const InvoiceModal: React.FC = () => {
                             {it.title}
                           </td>
                           <td className="py-0.5 px-1 border-r border-black text-right font-mono font-bold text-black">
-                            {formatNumber(it.price)}
+                            {sale.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price)}
                           </td>
                           <td className="py-0.5 px-1.5 text-right font-mono font-bold text-black">
-                            {formatNumber(it.price * it.qty)}
+                            {sale.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price * it.qty)}
                           </td>
                         </tr>
                       ))}
@@ -398,10 +398,10 @@ export const InvoiceModal: React.FC = () => {
                             {it.title}
                           </td>
                           <td className="py-0.5 px-1 border-r border-black text-right font-mono font-bold text-black">
-                            {formatNumber(it.price)}
+                            {sale.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price)}
                           </td>
                           <td className="py-0.5 px-1.5 text-right font-mono font-bold text-black">
-                            {formatNumber(it.price * it.qty)}
+                            {sale.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price * it.qty)}
                           </td>
                         </tr>
                       ))}
@@ -497,7 +497,7 @@ export const InvoiceModal: React.FC = () => {
                   <div className="border border-black rounded-lg p-2.5 space-y-1 bg-white">
                     <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-0.5 mb-1">DÉTAILS OPÉRATION</span>
                     <div className="flex justify-between"><span className="text-slate-800 font-semibold">Facturé par :</span><span className="font-bold uppercase font-mono">{supervisorName}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Mode de règlement :</span><span className="font-bold uppercase">{sale.paymentMode || "Espèces"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-800 font-semibold">Mode de règlement :</span><span className="font-bold uppercase">{sale.paymentMode === 'Cadeau' ? "🎁 CADEAU / OFFERT (0 FCFA)" : (sale.paymentMode || "Espèces")}</span></div>
                   </div>
                   <div className="border-2 border-black rounded-lg p-2.5 space-y-1 bg-white">
                     <span className="text-[10px] uppercase font-black text-black block border-b border-black pb-0.5 mb-1">FACTURÉ À / CLIENT</span>
@@ -525,8 +525,8 @@ export const InvoiceModal: React.FC = () => {
                           <td className="py-1.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black">{idx + 1}</td>
                           <td className="py-1.5 px-3 border-r-2 border-black font-bold uppercase text-black text-xs sm:text-sm">{it.title}</td>
                           <td className="py-1.5 px-3 border-r-2 border-black text-center font-mono font-bold text-black text-xs">{it.qty} sacs</td>
-                          <td className="py-1.5 px-3 border-r-2 border-black text-right font-mono font-bold text-black">{formatNumber(it.price)}</td>
-                          <td className="py-1.5 px-3 text-right font-mono font-black text-black">{formatNumber(it.price * it.qty)}</td>
+                          <td className="py-1.5 px-3 border-r-2 border-black text-right font-mono font-bold text-black">{sale.paymentMode === 'Cadeau' ? "0 (Offert)" : formatNumber(it.price)}</td>
+                          <td className="py-1.5 px-3 text-right font-mono font-black text-black">{sale.paymentMode === 'Cadeau' ? "0" : formatNumber(it.price * it.qty)}</td>
                         </tr>
                       ))}
                       {Array.from({ length: Math.max(0, 6 - saleItems.length) }).map((_, i) => (
@@ -548,7 +548,9 @@ export const InvoiceModal: React.FC = () => {
                   <div className="col-span-7">
                     <div className="border border-black rounded-lg p-2.5 bg-slate-50">
                       <span className="text-[10px] uppercase font-black text-black block mb-0.5">ARRÊTÉ LA FACTURE À LA SOMME DE :</span>
-                      <p className="text-xs font-serif font-black italic text-black leading-snug">{numberToWordsFR(sale.totalAmount)}</p>
+                      <p className="text-xs font-serif font-black italic text-black leading-snug">
+                        {sale.paymentMode === 'Cadeau' ? "ZÉRO FRANC CFA (MARCHANDISE OFFERTE / CADEAU)" : numberToWordsFR(sale.totalAmount)}
+                      </p>
                     </div>
                   </div>
                   <div className="col-span-5 border-2 border-black rounded-xl overflow-hidden bg-white p-2.5 space-y-1.5 text-xs">

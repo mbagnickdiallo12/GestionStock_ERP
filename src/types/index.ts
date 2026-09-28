@@ -55,7 +55,7 @@ export interface Sale {
   clientName: string;
   items: SaleItem[];
   totalAmount: number; // FCFA
-  paymentMode: 'Espece' | 'Wave' | 'Virement' | 'Cheque' | 'Credit';
+  paymentMode: 'Espece' | 'Wave' | 'Virement' | 'Cheque' | 'Credit' | 'Cadeau';
   status: 'Payé' | 'En attente' | 'Annulé';
   driverInfo?: DriverInfo;
 }

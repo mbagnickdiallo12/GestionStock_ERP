@@ -57,7 +57,11 @@ export default function RapportsPage() {
   });
 
   filteredSales.forEach(s => {
-    totalCA += s.totalAmount;
+    if (s.status === 'Annulé') return;
+
+    const isGift = s.paymentMode === 'Cadeau';
+    const saleRev = isGift ? 0 : s.totalAmount;
+    totalCA += saleRev;
 
     const foundDepot = depots.find(d => d.id === s.depotId || d.name === s.depotId);
     const depotKey = foundDepot ? foundDepot.id : s.depotId;
@@ -65,14 +69,14 @@ export default function RapportsPage() {
     if (!depotPerformance[depotKey]) {
       depotPerformance[depotKey] = { name: foundDepot ? foundDepot.name : s.depotId, revenue: 0, salesCount: 0 };
     }
-    depotPerformance[depotKey].revenue += s.totalAmount;
+    depotPerformance[depotKey].revenue += saleRev;
     depotPerformance[depotKey].salesCount += 1;
 
     s.items.forEach(it => {
       const prod = products.find(p => p.id === it.productId || p.title.toLowerCase() === it.title.toLowerCase());
-      const buyPrice = (prod && prod.buyPrice > 0) ? prod.buyPrice : Math.round(it.price * 0.85);
+      const buyPrice = (prod && prod.buyPrice > 0) ? prod.buyPrice : (prod?.sellPrice ? Math.round(prod.sellPrice * 0.85) : 8000);
       const itemCost = it.qty * buyPrice;
-      const itemRev = it.price * it.qty;
+      const itemRev = isGift ? 0 : (it.price * it.qty);
       costGoods += itemCost;
 
       const prodKey = prod ? prod.id : (it.productId || it.title);

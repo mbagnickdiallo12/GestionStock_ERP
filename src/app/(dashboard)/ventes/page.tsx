@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { 
   Plus, Search, FileText, CheckCircle2, Clock, Truck, 
   Building2, Ban, TrendingUp, X, Banknote,
-  Smartphone, Building, Sparkles, Edit3
+  Smartphone, Building, Sparkles, Edit3, Gift
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatFCFA, formatNumber, canManage, getUserAssignedDepot, isMatchingDepot } from "@/lib/utils";
@@ -32,6 +32,9 @@ function getAvatarColor(name: string) {
 // Payment method helper
 function getPaymentInfo(mode: string) {
   const m = (mode || "").toLowerCase();
+  if (m.includes("cadeau") || m.includes("offert") || m.includes("don")) {
+    return { label: "Cadeau / Offert", icon: Gift, color: "text-purple-400" };
+  }
   if (m.includes("wave") || m.includes("mobile") || m.includes("om")) {
     return { label: "Wave / Mobile", icon: Smartphone, color: "text-cyan-400" };
   }
@@ -285,7 +288,9 @@ export default function VentesPage() {
             <option value="espece">💵 Espèces</option>
             <option value="wave">📱 Wave / Mobile</option>
             <option value="virement">🏦 Virement</option>
+            <option value="cheque">📜 Chèque</option>
             <option value="credit">⏳ À Crédit</option>
+            <option value="cadeau">🎁 Cadeau / Offert</option>
           </select>
 
           {/* Status */}

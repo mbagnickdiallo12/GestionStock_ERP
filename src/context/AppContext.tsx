@@ -1201,7 +1201,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const invoiceNum = `FAC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    const totalAmt = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const isGift = paymentMode === "Cadeau";
+    const totalAmt = isGift ? 0 : cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
     const totalBagsCount = cart.reduce((sum, i) => sum + i.qty, 0);
 
     const saleDate = customDate && customDate.trim() 
@@ -1213,7 +1214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       date: saleDate,
       depotId: depotIdToDeduct,
       clientName: clientName || "Client Comptoir",
-      items: [...cart],
+      items: isGift ? cart.map(i => ({ ...i, price: 0 })) : [...cart],
       totalAmount: totalAmt,
       paymentMode: paymentMode,
       status: paymentMode === "Credit" ? "En attente" : "Payé",
@@ -1275,13 +1276,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Auto-log stock movement for audit history with exact product title
       const mvtRef = `MVT-${Math.floor(1000 + Math.random() * 9000)}`;
       const mvtDate = new Date().toISOString().slice(0, 16).replace("T", " ");
+      const mvtDest = isGift 
+        ? `Cadeau / Don Facture ${invoiceNum} (${clientName || 'Client Comptoir'})` 
+        : `Vente Facture ${invoiceNum} (${clientName || 'Client Comptoir'})`;
+
       const mvtObj: StockMovement = {
         ref: mvtRef,
         date: mvtDate,
         type: 'SORTIE',
         prodTitle: targetProdTitle,
         source: targetDepot?.name || 'Dépôt Vendeur',
-        dest: `Vente Facture ${invoiceNum} (${clientName || 'Client Comptoir'})`,
+        dest: mvtDest,
         qty: item.qty,
         operator: activeUserObj ? activeUserObj.name : 'Caissier POS'
       };
@@ -1299,7 +1304,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         type: 'SORTIE',
         product_title: targetProdTitle,
         source: targetDepot?.name || 'Dépôt Vendeur',
-        dest: `Vente Facture ${invoiceNum} (${clientName || 'Client Comptoir'})`,
+        dest: mvtDest,
         quantity: item.qty,
         operator: activeUserObj ? activeUserObj.name : 'Caissier POS'
       });
@@ -1336,7 +1341,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           product_id: matchedProd ? matchedProd.id : item.productId,
           product_title: matchedProd ? matchedProd.title : item.title,
           quantity: item.qty,
-          unit_price: item.price
+          unit_price: isGift ? 0 : item.price
         };
       });
       const { error: saleItemsErr } = await supabase.from('sale_items').insert(saleItemsPayload);
@@ -1349,7 +1354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error("Sales Supabase error:", error);
       showToast(`Erreur Supabase Vente: ${error.message}`, "error");
     } else {
-      showToast(`Vente ${invoiceNum} enregistrée dans Supabase !`, "success");
+      showToast(isGift ? `Cadeau ${invoiceNum} validé (Stock déduit, 0 FCFA finance)` : `Vente ${invoiceNum} enregistrée dans Supabase !`, "success");
       refreshFromSupabase();
     }
 
@@ -1386,7 +1391,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return copy;
     });
 
-    logActivity("VENTE", `Validation Vente ${invoiceNum} (${clientName || "Client Comptoir"}) - ${formatNumber(totalBagsCount)} sacs pour ${formatFCFA(totalAmt)}`, targetDepot?.name);
+    if (isGift) {
+      logActivity("VENTE", `🎁 Sortie Cadeau / Offert Facture ${invoiceNum} (${clientName || "Client Comptoir"}) - ${formatNumber(totalBagsCount)} sacs offerts (0 FCFA)`, targetDepot?.name);
+    } else {
+      logActivity("VENTE", `Validation Vente ${invoiceNum} (${clientName || "Client Comptoir"}) - ${formatNumber(totalBagsCount)} sacs pour ${formatFCFA(totalAmt)}`, targetDepot?.name);
+    }
     clearCart();
     openModal(`invoice-${invoiceNum}`);
   };
@@ -2824,13 +2833,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // 2. Calculate final amount
-    const calculatedTotal = newItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
-    const finalTotalAmount = updatedData.totalAmount !== undefined ? updatedData.totalAmount : calculatedTotal;
+    const isGift = (updatedData.paymentMode || existingSale.paymentMode) === 'Cadeau';
+    const calculatedTotal = isGift ? 0 : newItems.reduce((acc, i) => acc + (i.price * i.qty), 0);
+    const finalTotalAmount = isGift ? 0 : (updatedData.totalAmount !== undefined ? updatedData.totalAmount : calculatedTotal);
 
     const mergedSale: Sale = {
       ...existingSale,
       ...updatedData,
-      items: newItems,
+      items: isGift ? newItems.map(it => ({ ...it, price: 0 })) : newItems,
       totalAmount: finalTotalAmount
     };
 

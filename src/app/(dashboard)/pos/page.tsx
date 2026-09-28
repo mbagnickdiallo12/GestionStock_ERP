@@ -459,11 +459,18 @@ export default function POSPage() {
             </div>
             <div className="flex justify-between text-xs text-slate-400">
               <span>Sous-total:</span>
-              <span className="text-white">{formatFCFA(totalAmount)}</span>
+              <span className={paymentMode === "Cadeau" ? "line-through text-slate-500 font-mono" : "text-white font-mono"}>{formatFCFA(totalAmount)}</span>
             </div>
             <div className="flex justify-between text-base font-extrabold text-white border-t border-white/10 pt-2">
               <span>Total Net à Payer:</span>
-              <span className="text-emerald-400">{formatFCFA(totalAmount)}</span>
+              {paymentMode === "Cadeau" ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs px-2 py-0.5 rounded-full font-bold">🎁 Cadeau / Offert</span>
+                  <span className="text-purple-400 font-mono">0 FCFA</span>
+                </div>
+              ) : (
+                <span className="text-emerald-400 font-mono">{formatFCFA(totalAmount)}</span>
+              )}
             </div>
 
             {/* Sale Date Picker */}
@@ -499,6 +506,7 @@ export default function POSPage() {
                 <option value="Virement">🏦 Virement Bancaire</option>
                 <option value="Cheque">📜 Chèque Bancaire</option>
                 <option value="Credit">⏳ Crédit Client (30 Jours)</option>
+                <option value="Cadeau">🎁 Cadeau / Offert (Non comptabilisé en finance)</option>
               </select>
             </div>
 

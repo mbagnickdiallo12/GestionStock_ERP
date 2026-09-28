@@ -48,9 +48,9 @@ export default function DashboardPage() {
     }
   });
 
-  // Sales Today
-  const salesTodayVal = filteredSales.reduce((acc, s) => acc + s.totalAmount, 0);
-  const bagsTodayVal = filteredSales.reduce((acc, s) => acc + s.items.reduce((a, b) => a + b.qty, 0), 0);
+  // Sales Today (excluding Annulé & Cadeau)
+  const salesTodayVal = filteredSales.reduce((acc, s) => s.status === 'Annulé' || s.paymentMode === 'Cadeau' ? acc : acc + (s.totalAmount || 0), 0);
+  const bagsTodayVal = filteredSales.reduce((acc, s) => s.status === 'Annulé' ? acc : acc + s.items.reduce((a, b) => a + b.qty, 0), 0);
 
   // Monthly Expenses (dynamically filtered by active depot)
   const filteredExpenses = expenses.filter(e => isMatchingDepot(e.depotId, activeDepotId, depots));
