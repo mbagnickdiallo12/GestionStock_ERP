@@ -13,6 +13,7 @@ export default function RHPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [depotFilter, setDepotFilter] = useState(activeDepotId);
+  const [monthFilter, setMonthFilter] = useState("all");
   const [showColumnMenu, setShowColumnMenu] = useState(false);
 
   // Column visibility state (useful defaults to avoid clutter)
@@ -53,8 +54,9 @@ export default function RHPage() {
 
     const matchRole = roleFilter === "all" || emp.role.toLowerCase().includes(roleFilter.toLowerCase());
     const matchDepot = depotFilter === "all" || emp.depotId === depotFilter;
+    const matchMonth = monthFilter === "all" || (emp.lastPay && emp.lastPay.toLowerCase().includes(monthFilter.toLowerCase()));
 
-    return matchSearch && matchRole && matchDepot;
+    return matchSearch && matchRole && matchDepot && matchMonth;
   });
 
   const totalMonthlyPayroll = employees.reduce((sum, e) => sum + (e.salary || 0) + (e.transportAllowance || 0) + (e.housingAllowance || 0), 0);
@@ -169,6 +171,19 @@ export default function RHPage() {
             <option value="manutention">Manutentionnaires</option>
           </select>
 
+          {/* Month / Pay Status Filter */}
+          <select
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            className="bg-[#0f172a] border border-white/15 text-white text-xs font-bold px-3 py-2 rounded-xl outline-none cursor-pointer"
+          >
+            <option value="all">🗓️ Tous les Mois</option>
+            <option value="Octobre 2026">Octobre 2026</option>
+            <option value="Septembre 2026">Septembre 2026</option>
+            <option value="Août 2026">Août 2026</option>
+            <option value="En attente">En attente de paie</option>
+          </select>
+
           {/* Column Toggle Dropdown */}
           <div className="relative">
             <button
@@ -240,7 +255,7 @@ export default function RHPage() {
                 {visibleCols.contact && <th className="py-3.5 px-4 font-semibold">Contact</th>}
                 <th className="py-3.5 px-4 font-semibold text-right">Rémunération</th>
                 {visibleCols.avances && <th className="py-3.5 px-4 font-semibold text-right">Avances</th>}
-                {visibleCols.statutPaie && <th className="py-3.5 px-4 font-semibold text-center">Dernière Paie</th>}
+                {visibleCols.statutPaie && <th className="py-3.5 px-4 font-semibold text-center">Mois & Statut Paie</th>}
                 <th className="py-3.5 px-4 text-right font-semibold">Actions RH</th>
               </tr>
             </thead>
@@ -340,16 +355,23 @@ export default function RHPage() {
                         </td>
                       )}
 
-                      {/* Dernière Paie */}
+                      {/* Mois & Statut Paie */}
                       {visibleCols.statutPaie && (
                         <td className="py-3.5 px-4 text-center text-xs">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
-                            emp.lastPay?.includes('2026')
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-slate-800 text-slate-400 border-white/5'
-                          }`}>
-                            {emp.lastPay || "En attente"}
-                          </span>
+                          <button
+                            onClick={() => openModal(`payslip-${emp.id}`)}
+                            className="cursor-pointer group/badge transition-transform hover:scale-105"
+                            title="Ouvrir le bulletin de paie pour ce mois"
+                          >
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
+                              emp.lastPay && emp.lastPay.includes('2026')
+                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 group-hover/badge:border-emerald-400'
+                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20 group-hover/badge:border-amber-400'
+                            }`}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                              {emp.lastPay || "En attente"}
+                            </span>
+                          </button>
                         </td>
                       )}
 

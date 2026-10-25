@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Search, Plus, Minus, FileText, FileCheck, Calendar, Clock, RotateCcw, AlertTriangle } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Search, Plus, Minus, FileText, FileCheck, Calendar, Clock, RotateCcw, AlertTriangle, Building2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { formatNumber, canCreate, getUserAssignedDepot, isMatchingDepot } from "@/lib/utils";
 import { DatePeriodFilter } from "@/components/ui/DatePeriodFilter";
@@ -10,7 +10,7 @@ import { SkeletonTable, SkeletonStatCard } from "@/components/ui/Skeleton";
 import { Pagination } from "@/components/ui/Pagination";
 
 export default function StocksPage() {
-  const { movements, depots, products, stocks, sales, openModal, isLoading, currentUser } = useApp();
+  const { movements, depots, products, stocks, sales, openModal, isLoading, currentUser, activeDepotId } = useApp();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [mvtTypeFilter, setMvtTypeFilter] = useState("all");
@@ -23,6 +23,19 @@ export default function StocksPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const userRestricted = getUserAssignedDepot(currentUser, depots);
+
+  const [depotFilter, setDepotFilter] = useState(() => {
+    if (userRestricted) return userRestricted.id;
+    return activeDepotId;
+  });
+
+  useEffect(() => {
+    if (userRestricted) {
+      setDepotFilter(userRestricted.id);
+    } else {
+      setDepotFilter(activeDepotId);
+    }
+  }, [activeDepotId, userRestricted]);
 
   // Calculate historical stock matrix at selected date
   const displayStocks = useMemo(() => {
@@ -103,13 +116,17 @@ export default function StocksPage() {
     );
   }
 
+  const effectiveDepotFilter = userRestricted ? userRestricted.id : depotFilter;
+
   const filteredMovements = movements.filter(m => {
     const matchSearch = m.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         m.prodTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         m.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         m.dest.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = mvtTypeFilter === "all" || m.type === mvtTypeFilter;
-    const matchDepot = !userRestricted || isMatchingDepot(m.source, userRestricted.name, depots) || isMatchingDepot(m.dest, userRestricted.name, depots);
+    const matchDepot = effectiveDepotFilter === "all" || 
+                       isMatchingDepot(m.source, effectiveDepotFilter, depots) || 
+                       isMatchingDepot(m.dest, effectiveDepotFilter, depots);
 
     const mvtDate = m.date ? m.date.slice(0, 10) : "";
     const matchStart = !startDate || mvtDate >= startDate;
@@ -274,6 +291,29 @@ export default function StocksPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Depot Filter: Locked for restricted users, selector for admins */}
+          {userRestricted ? (
+            <div className="flex items-center gap-2 bg-[#0f172a] border border-amber-500/30 px-3 py-2 rounded-xl shadow-sm" title={`Compte assigné exclusivement au ${userRestricted.name}`}>
+              <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-white text-xs font-bold truncate">📍 {userRestricted.name}</span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/30 ml-1">Affecté</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-[#0f172a] border border-white/15 px-3 py-2 rounded-xl">
+              <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <select
+                value={depotFilter}
+                onChange={(e) => setDepotFilter(e.target.value)}
+                className="bg-transparent text-white text-xs font-bold outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-[#1e293b]">📍 Tous les Dépôts</option>
+                {depots.map(d => (
+                  <option key={d.id} value={d.id} className="bg-[#1e293b]">📍 {d.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <DatePeriodFilter
             startDate={startDate}
             endDate={endDate}

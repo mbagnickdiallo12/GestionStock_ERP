@@ -99,6 +99,7 @@ export default function DepensesPage() {
 
   // Calculate dynamic stats based on selected depot / filter
   const totalExpensesAmount = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const salairesAmount = filteredExpenses.filter(e => e.category === "Salaire").reduce((sum, e) => sum + e.amount, 0);
   const manutentionAmount = filteredExpenses.filter(e => e.category === "Manutention").reduce((sum, e) => sum + e.amount, 0);
   const transportAmount = filteredExpenses.filter(e => e.category === "Transport").reduce((sum, e) => sum + e.amount, 0);
   const fixedChargesAmount = filteredExpenses
@@ -265,6 +266,7 @@ export default function DepensesPage() {
             className="bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer"
           >
             <option value="all" className="bg-[#1e293b]">Toutes Catégories</option>
+            <option value="Salaire" className="bg-[#1e293b]">💰 Salaires & Émoluments</option>
             <option value="Manutention" className="bg-[#1e293b]">💪 Manutention & Déchargement</option>
             <option value="Journalier" className="bg-[#1e293b]">👷 Journalier / Main d'œuvre</option>
             <option value="Repas" className="bg-[#1e293b]">🍲 Repas & Restauration</option>
@@ -308,7 +310,12 @@ export default function DepensesPage() {
                         </span>
                       </td>
                       <td className="p-3 whitespace-nowrap">
-                        <span className="bg-amber-500/15 text-amber-400 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
+                          e.category === "Salaire"
+                            ? "bg-yellow-500/15 text-yellow-400 border border-yellow-500/30"
+                            : "bg-amber-500/15 text-amber-400"
+                        }`}>
+                          {e.category === "Salaire" && "💰"}
                           {e.category === "Manutention" && "💪"}
                           {e.category === "Journalier" && "👷"}
                           {e.category === "Repas" && "🍲"}
@@ -398,6 +405,7 @@ export default function DepensesPage() {
               className="w-full bg-[#0f172a] border border-white/15 text-white text-sm px-3 py-2 rounded-xl outline-none cursor-pointer"
               required
             >
+              <option value="Salaire" className="bg-[#1e293b]">💰 Salaires & Émoluments</option>
               <option value="Manutention" className="bg-[#1e293b]">💪 Manutention & Déchargement</option>
               <option value="Journalier" className="bg-[#1e293b]">👷 Journalier / Main d'œuvre</option>
               <option value="Repas" className="bg-[#1e293b]">🍲 Repas & Restauration</option>

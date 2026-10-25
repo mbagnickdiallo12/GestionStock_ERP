@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { Printer, X, Copy, Truck, FileText, Sparkles, Edit3, UserCheck, Phone, MapPin, Hash, Check } from "lucide-react";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, isMatchingDepot } from "@/lib/utils";
 
 export const DeliveryNoteModal: React.FC = () => {
   const { activeModal, openModal, closeModal, sales, movements, depots, settings, products, clients, currentUser, updateSale, showToast } = useApp();
@@ -77,16 +77,19 @@ export const DeliveryNoteModal: React.FC = () => {
   const blCode = `BL${cleanRefNumber}`;
   const factureCode = `FC${cleanRefNumber}`;
 
-  const dateStr = targetSale ? targetSale.date : (targetMvt ? targetMvt.date : new Date().toLocaleDateString('fr-FR'));
-  const timeStr = "18:27";
+  const rawDate = targetSale ? targetSale.date : (targetMvt ? targetMvt.date : "");
+  const formattedDateTime = rawDate ? rawDate.replace("T", " ") : new Date().toLocaleDateString('fr-FR');
 
   const depotSource = targetSale 
     ? (depots.find(d => d.id === targetSale.depotId)?.name || targetSale.depotId)
     : (targetMvt ? targetMvt.source : (depots[0]?.name || "Dépôt Principal"));
 
+  const destDepotObj = targetMvt ? depots.find(d => isMatchingDepot(d.name, targetMvt.dest, depots) || isMatchingDepot(d.id, targetMvt.dest, depots)) : null;
   const matchedClient = clients.find(c => c.name.toLowerCase() === (targetSale?.clientName || "").toLowerCase());
   const recipient = (targetSale ? (targetSale.clientName || "CLIENT COMPTOIR") : (targetMvt ? targetMvt.dest : "CLIENT GROSSISTE")).toUpperCase();
-  const recipientPhone = matchedClient?.phone || "77 608 55 76";
+  const recipientPhone = targetSale 
+    ? (targetSale.driverInfo?.phone || matchedClient?.phone || "—")
+    : (destDepotObj?.phone || "—");
 
   const displayedDriver = driverName || (targetMvt ? targetMvt.operator : (currentUser?.name || "SUPERVISEUR")).toUpperCase();
 
@@ -190,7 +193,7 @@ export const DeliveryNoteModal: React.FC = () => {
                   {viewMode === "dual" ? "Double BL (2x sur 1 Feuille A4)" : "1 BL Plein Format"}
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">Destinataire : {recipient} &bull; {dateStr}</p>
+              <p className="text-xs text-slate-400">Destinataire : {recipient} &bull; {formattedDateTime}</p>
             </div>
           </div>
 
@@ -395,7 +398,7 @@ export const DeliveryNoteModal: React.FC = () => {
                       <span className="font-mono text-xs">{blCode}</span>
                     </div>
                     <div className="font-mono text-[10px] text-black">
-                      {dateStr} &nbsp; {timeStr}
+                      {formattedDateTime}
                     </div>
                   </div>
 
@@ -518,7 +521,7 @@ export const DeliveryNoteModal: React.FC = () => {
                       <span className="font-mono text-xs">{blCode}</span>
                     </div>
                     <div className="font-mono text-[10px] text-black">
-                      {dateStr} &nbsp; {timeStr}
+                      {formattedDateTime}
                     </div>
                   </div>
 
@@ -643,7 +646,7 @@ export const DeliveryNoteModal: React.FC = () => {
                     </div>
                     <div className="mt-1.5 text-xs space-y-0.5 text-black">
                       <p className="font-mono font-black text-sm">N° {blCode}</p>
-                      <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{dateStr} {timeStr}</span></p>
+                      <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{formattedDateTime}</span></p>
                     </div>
                   </div>
                 </div>

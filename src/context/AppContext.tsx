@@ -117,7 +117,7 @@ interface AppContextType {
   updateEmployee: (id: string, updatedData: Partial<Employee>) => void;
   deleteEmployee: (id: string) => void;
   grantSalaryAdvance: (id: string, amount: number) => void;
-  paySalary: (id: string, netPayAmount: number) => void;
+  paySalary: (id: string, netPayAmount: number, payMonth?: string) => void;
 
   addUser: (usr: Omit<UserAccount, 'lastLogin'>) => void;
   updateUser: (username: string, updatedData: Partial<UserAccount>) => void;
@@ -2293,30 +2293,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     closeModal();
   };
 
-  const paySalary = async (id: string, netPayAmount: number) => {
+  const paySalary = async (id: string, netPayAmount: number, payMonth?: string) => {
     const target = employees.find(e => e.id === id);
     if (!target) return;
 
-    const currentMonth = "Août 2026";
+    const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    const now = new Date();
+    const currentMonth = payMonth?.trim() || `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+
     setEmployees(prev => {
       const next = prev.map(e => e.id === id ? { ...e, advances: 0, lastPay: currentMonth } : e);
       localStorage.setItem("RizStock_Employees", JSON.stringify(next));
       return next;
     });
 
-    await supabase.from('employees').update({ advances: 0, last_pay: currentMonth }).eq('id', id);
+    const { error: errEmp } = await supabase.from('employees').update({ advances: 0, last_pay: currentMonth }).eq('id', id);
+    if (errEmp) console.error("Supabase error updating employee last_pay:", errEmp);
 
     await addExpense({
       depotId: target.depotId,
-      category: "Loyer",
+      category: "Salaire",
       amount: netPayAmount,
       beneficiary: target.name,
       desc: `Paiement Salaire ${currentMonth} - Net Versé`,
-      user: "Direction RH"
+      user: currentUser?.name || "Direction RH"
     });
 
     logActivity("PAIE", `Validation paiement salaire net ${currentMonth} de ${formatFCFA(netPayAmount)} pour ${target.name}`);
     showToast(`Salaire du mois (${currentMonth}) réglé pour ${target.name} !`, "success");
+    await refreshFromSupabase();
   };
 
   const addUser = async (usrData: Omit<UserAccount, 'lastLogin'>) => {
@@ -2599,86 +2604,118 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const transferStock = async (srcId: string, destId: string, prodId: string, qty: number, truck: string) => {
-    const avail = (stocks[srcId] && stocks[srcId][prodId]) || 0;
-    if (avail < qty) {
-      showToast(`Stock insuffisant dans le dépôt source. Disponible: ${formatNumber(avail)} sacs`, "error");
+    // 1. Resolve real source depot, destination depot, and product
+    const srcDep = depots.find(d => d.id === srcId || isMatchingDepot(d.id, srcId, depots) || isMatchingDepot(d.name, srcId, depots)) || depots[0];
+    const destDep = depots.find(d => d.id === destId || isMatchingDepot(d.id, destId, depots) || isMatchingDepot(d.name, destId, depots)) || depots[1] || depots[0];
+    const prod = products.find(p => p.id === prodId || p.title.toLowerCase() === prodId.toLowerCase()) || products[0];
+
+    if (!srcDep || !destDep || !prod) {
+      showToast("Données de transfert invalides (dépôts ou produit introuvables).", "error");
       return;
     }
 
-    // Direct real-time fetch from Supabase
+    const actualSrcId = srcDep.id;
+    const actualDestId = destDep.id;
+    const actualProdId = prod.id;
+
+    if (actualSrcId === actualDestId) {
+      showToast("Le dépôt source et le dépôt de destination doivent être différents.", "error");
+      return;
+    }
+
+    if (qty <= 0) {
+      showToast("La quantité à transférer doit être supérieure à 0.", "error");
+      return;
+    }
+
+    // Direct real-time fetch from Supabase to guarantee exact physical quantities
     const { data: srcRow } = await supabase
       .from('depot_stocks')
       .select('id, quantity')
-      .eq('depot_id', srcId)
-      .eq('product_id', prodId)
+      .eq('depot_id', actualSrcId)
+      .eq('product_id', actualProdId)
       .maybeSingle();
 
     const { data: destRow } = await supabase
       .from('depot_stocks')
       .select('id, quantity')
-      .eq('depot_id', destId)
-      .eq('product_id', prodId)
+      .eq('depot_id', actualDestId)
+      .eq('product_id', actualProdId)
       .maybeSingle();
 
-    const srcCurrent = srcRow ? Number(srcRow.quantity) : ((stocks[srcId] && stocks[srcId][prodId]) || 0);
-    const destCurrent = destRow ? Number(destRow.quantity) : ((stocks[destId] && stocks[destId][prodId]) || 0);
+    const srcCurrent = srcRow ? Number(srcRow.quantity) : ((stocks[actualSrcId] && stocks[actualSrcId][actualProdId]) || 0);
+    const destCurrent = destRow ? Number(destRow.quantity) : ((stocks[actualDestId] && stocks[actualDestId][actualProdId]) || 0);
+
+    if (srcCurrent < qty) {
+      showToast(`Stock insuffisant dans le dépôt source (${srcDep.name}). Disponible: ${formatNumber(srcCurrent)} sacs`, "error");
+      return;
+    }
 
     const newSrcQty = Math.max(0, srcCurrent - qty);
     const newDestQty = destCurrent + qty;
 
-    if (srcRow) {
-      await supabase.from('depot_stocks').update({ quantity: newSrcQty, updated_at: new Date().toISOString() }).eq('id', srcRow.id);
-    } else {
-      await supabase.from('depot_stocks').insert({ depot_id: srcId, product_id: prodId, quantity: newSrcQty });
-    }
+    // Direct atomic upsert into Supabase for both source and destination
+    const { error: errSrc } = await supabase.from('depot_stocks').upsert({
+      depot_id: actualSrcId,
+      product_id: actualProdId,
+      quantity: newSrcQty,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'depot_id,product_id' });
 
-    if (destRow) {
-      await supabase.from('depot_stocks').update({ quantity: newDestQty, updated_at: new Date().toISOString() }).eq('id', destRow.id);
-    } else {
-      await supabase.from('depot_stocks').insert({ depot_id: destId, product_id: prodId, quantity: newDestQty });
-    }
+    const { error: errDest } = await supabase.from('depot_stocks').upsert({
+      depot_id: actualDestId,
+      product_id: actualProdId,
+      quantity: newDestQty,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'depot_id,product_id' });
 
+    if (errSrc) console.error("Supabase error updating source stock:", errSrc);
+    if (errDest) console.error("Supabase error updating destination stock:", errDest);
+
+    // Update local state immediately
     setStocks(prev => {
       const updated = { ...prev };
-      if (!updated[srcId]) updated[srcId] = {};
-      if (!updated[destId]) updated[destId] = {};
-      updated[srcId][prodId] = newSrcQty;
-      updated[destId][prodId] = newDestQty;
+      if (!updated[actualSrcId]) updated[actualSrcId] = {};
+      if (!updated[actualDestId]) updated[actualDestId] = {};
+      updated[actualSrcId][actualProdId] = newSrcQty;
+      updated[actualDestId][actualProdId] = newDestQty;
       localStorage.setItem("RizStock_Stocks", JSON.stringify(updated));
       return updated;
     });
 
-    const prod = products.find(p => p.id === prodId);
-    const srcDep = depots.find(d => d.id === srcId);
-    const destDep = depots.find(d => d.id === destId);
-
     const ref = `TRF-${Math.floor(1000 + Math.random() * 9000)}`;
-    setMovements(prev => [{
-      ref,
-      date: new Date().toISOString().slice(0, 16).replace("T", " "),
-      type: "TRANSFERT",
-      prodTitle: prod ? prod.title : prodId,
-      source: srcDep ? srcDep.name : srcId,
-      dest: destDep ? destDep.name : destId,
-      qty: qty,
-      operator: `Chauffeur (${truck || "Camion Dépôt"})`
-    }, ...prev]);
+    const nowStr = new Date().toISOString().slice(0, 16).replace("T", " ");
+    const operatorStr = truck ? `Chauffeur (${truck})` : (currentUser?.name || "Chauffeur Transporteur");
 
-    const { error } = await supabase.from('stock_movements').insert({
+    const newMovement: StockMovement = {
+      ref,
+      date: nowStr,
+      type: "TRANSFERT",
+      prodTitle: prod.title,
+      source: srcDep.name.trim(),
+      dest: destDep.name.trim(),
+      qty: qty,
+      operator: operatorStr
+    };
+
+    setMovements(prev => [newMovement, ...prev]);
+
+    const { error: errMvt } = await supabase.from('stock_movements').insert({
       ref,
       type: "TRANSFERT",
-      product_title: prod ? prod.title : prodId,
-      source: srcDep ? srcDep.name : srcId,
-      dest: destDep ? destDep.name : destId,
+      product_title: prod.title,
+      source: srcDep.name.trim(),
+      dest: destDep.name.trim(),
       quantity: qty,
-      operator: `Chauffeur (${truck || "Camion Dépôt"})`
+      operator: operatorStr,
+      created_at: new Date().toISOString()
     });
 
-    if (error) console.error(error);
-    else refreshFromSupabase();
+    if (errMvt) console.error("Supabase stock movement insert error:", errMvt);
 
-    logActivity("STOCK", `Transfert Inter-Dépôts ${ref} (${formatNumber(qty)} sacs) de ${srcDep?.name} vers ${destDep?.name}`);
-    showToast(`Transfert de ${formatNumber(qty)} sacs réalisé avec succès !`);
+    logActivity("STOCK", `Transfert Inter-Dépôts ${ref} (${formatNumber(qty)} sacs de ${prod.title}) de ${srcDep.name.trim()} vers ${destDep.name.trim()}`);
+    showToast(`Transfert de ${formatNumber(qty)} sacs réalisé avec succès !`, "success");
+    await refreshFromSupabase();
     closeModal();
   };
 

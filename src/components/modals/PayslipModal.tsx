@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { useApp } from "@/context/AppContext";
-import { Printer, CheckCircle2, Wheat } from "lucide-react";
+import { Printer, CheckCircle2, Calendar } from "lucide-react";
 import { formatFCFA } from "@/lib/utils";
 
 export const PayslipModal: React.FC = () => {
@@ -12,6 +12,29 @@ export const PayslipModal: React.FC = () => {
   const isPayslipModal = activeModal && activeModal.startsWith("payslip-");
   const empId = isPayslipModal ? activeModal.replace("payslip-", "") : null;
   const employee = employees.find(e => e.id === empId);
+
+  const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const defaultCurrentMonth = `${monthNames[now.getMonth()]} ${currentYear}`;
+
+  const [payMonth, setPayMonth] = useState(defaultCurrentMonth);
+
+  // Month options: 12 months of current year, and last 3 months of previous year
+  const availableMonths = [
+    `Août ${currentYear}`,
+    `Septembre ${currentYear}`,
+    `Octobre ${currentYear}`,
+    `Novembre ${currentYear}`,
+    `Décembre ${currentYear}`,
+    ...monthNames.map(m => `${m} ${currentYear}`)
+  ].filter((v, i, a) => a.indexOf(v) === i);
+
+  useEffect(() => {
+    if (employee && employee.lastPay && employee.lastPay !== "Jamais" && employee.lastPay !== "En attente") {
+      setPayMonth(defaultCurrentMonth);
+    }
+  }, [employee, defaultCurrentMonth]);
 
   if (!isPayslipModal || !employee) return null;
 
@@ -32,9 +55,11 @@ export const PayslipModal: React.FC = () => {
   };
 
   const handlePaySalary = () => {
-    paySalary(employee.id, netPayable);
+    paySalary(employee.id, netPayable, payMonth);
     closeModal();
   };
+
+  const isAlreadyPaidForMonth = employee.lastPay === payMonth;
 
   return (
     <Modal
@@ -47,8 +72,11 @@ export const PayslipModal: React.FC = () => {
             <button onClick={handlePrint} className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-900/30 transition-all">
               <Printer className="w-3.5 h-3.5" /> Imprimer Bulletin (PDF)
             </button>
-            <button onClick={handlePaySalary} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-900/30 transition-all">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Valider Paiement Net
+            <button 
+              onClick={handlePaySalary} 
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-900/30 transition-all"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" /> Valider Paiement Net ({payMonth})
             </button>
           </div>
           <button onClick={closeModal} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors">
@@ -57,6 +85,32 @@ export const PayslipModal: React.FC = () => {
         </div>
       )}
     >
+      {/* Month Selection Bar (No Print) */}
+      <div className="no-print mb-4 bg-slate-900/90 border border-white/10 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+          <Calendar className="w-4 h-4 text-emerald-400" />
+          <span>Mois & Période du Salaire :</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={payMonth}
+            onChange={(e) => setPayMonth(e.target.value)}
+            className="bg-[#1e293b] border border-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-lg outline-none cursor-pointer"
+          >
+            {availableMonths.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <span className={`px-2 py-1 rounded text-[11px] font-bold border ${
+            isAlreadyPaidForMonth 
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+          }`}>
+            {isAlreadyPaidForMonth ? "Déjà Réglé" : "À Payer"}
+          </span>
+        </div>
+      </div>
+
       <div className="printable-document bg-white text-slate-900 p-8 rounded-2xl font-sans border border-slate-200/80 shadow-md">
         
         {/* Top Content Group */}
@@ -80,14 +134,14 @@ export const PayslipModal: React.FC = () => {
 
             <div className="text-right">
               <span className="text-slate-400 font-semibold text-[9.5px] uppercase tracking-wider block mb-1">
-                STATUT PAIE
+                STATUT PAIE ({payMonth})
               </span>
               <span className={`px-2.5 py-0.5 rounded text-xs font-bold inline-block border ${
-                employee.lastPay?.includes('2026') 
+                isAlreadyPaidForMonth 
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
                   : 'bg-blue-50 border-blue-200 text-blue-700'
               }`}>
-                {employee.lastPay?.includes('2026') ? 'Payé / Réglé' : 'Prêt pour Règlement'}
+                {isAlreadyPaidForMonth ? 'Payé / Réglé' : 'Prêt pour Règlement'}
               </span>
             </div>
           </div>
@@ -114,7 +168,7 @@ export const PayslipModal: React.FC = () => {
             </div>
             <div>
               <span className="text-slate-400 text-[10.5px] block font-medium">Période de Règlement :</span>
-              <span className="font-extrabold text-slate-800 text-sm">Août 2026</span>
+              <span className="font-extrabold text-emerald-700 text-sm">{payMonth}</span>
             </div>
           </div>
 
@@ -179,7 +233,7 @@ export const PayslipModal: React.FC = () => {
           {/* Total Highlight Box */}
           <div className="flex justify-end my-5">
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-5 py-3 flex items-center justify-between gap-6 min-w-[300px]">
-              <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">NET À PAYER :</span>
+              <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">NET À PAYER ({payMonth}) :</span>
               <span className="text-xl font-black text-emerald-600 font-mono tracking-tight">{formatFCFA(netPayable)}</span>
             </div>
           </div>
@@ -202,7 +256,7 @@ export const PayslipModal: React.FC = () => {
         {/* Footer */}
         <div className="border-t border-slate-200/80 pt-3 mt-auto flex flex-wrap items-center justify-between gap-2 text-[9.5px] text-slate-400">
           <span>Bulletin édité par {settings.companyName || "RizStock ERP"}</span>
-          <span>Document certifié électroniquement</span>
+          <span>Période : {payMonth} &bull; Document certifié électroniquement</span>
         </div>
 
       </div>

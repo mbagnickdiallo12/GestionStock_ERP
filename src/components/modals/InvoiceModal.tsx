@@ -63,11 +63,10 @@ export const InvoiceModal: React.FC = () => {
   const blCode = `BL${cleanRefNumber}`;
   
   const clientNameDisplay = (sale.clientName || "CLIENT COMPTOIR").toUpperCase();
-  const clientPhone = matchedClient?.phone || "77 608 55 76";
+  const clientPhone = matchedClient?.phone || "—";
 
-  // Format Date & Time
-  const dateStr = sale.date || new Date().toLocaleDateString('fr-FR');
-  const timeStr = "18:27";
+  // Format Date & Time cleanly
+  const formattedDateTime = sale.date ? sale.date.replace("T", " ") : new Date().toLocaleDateString('fr-FR');
 
   const supervisorName = (currentUser?.name || "SUPERVISEUR").toUpperCase();
 
@@ -136,7 +135,7 @@ export const InvoiceModal: React.FC = () => {
                   {viewMode === "dual" ? "Double Facture (2x sur 1 Feuille A4)" : "1 Facture Plein Format"}
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">Client : {clientNameDisplay} &bull; {dateStr}</p>
+              <p className="text-xs text-slate-400">Client : {clientNameDisplay} &bull; {formattedDateTime}</p>
             </div>
           </div>
 
@@ -243,7 +242,7 @@ export const InvoiceModal: React.FC = () => {
                       <span className="font-mono text-xs">{factureCode}</span>
                     </div>
                     <div className="font-mono text-[10px] text-black">
-                      {dateStr} &nbsp; {timeStr}
+                      {formattedDateTime}
                     </div>
                   </div>
 
@@ -366,7 +365,7 @@ export const InvoiceModal: React.FC = () => {
                       <span className="font-mono text-xs">{factureCode}</span>
                     </div>
                     <div className="font-mono text-[10px] text-black">
-                      {dateStr} &nbsp; {timeStr}
+                      {formattedDateTime}
                     </div>
                   </div>
 
@@ -488,7 +487,7 @@ export const InvoiceModal: React.FC = () => {
                     </div>
                     <div className="mt-1.5 text-xs space-y-0.5 text-black">
                       <p className="font-mono font-black text-sm">N° {factureCode}</p>
-                      <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{dateStr} {timeStr}</span></p>
+                      <p className="text-xs font-semibold">Date : <span className="font-mono font-bold">{formattedDateTime}</span></p>
                     </div>
                   </div>
                 </div>

@@ -166,32 +166,75 @@ export function isMatchingDepot(
   if (!targetDepotId || targetDepotId === "all") return true;
   if (!itemDepotId) return false;
 
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // remove accents
+      .replace(/[^a-z0-9]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
   const cleanItem = String(itemDepotId).trim();
   const cleanTarget = String(targetDepotId).trim();
 
   // 1. Direct ID / value match
   if (cleanItem.toLowerCase() === cleanTarget.toLowerCase()) return true;
 
-  const targetDepot = depots.find(d => d.id.toLowerCase() === cleanTarget.toLowerCase() || d.name.toLowerCase() === cleanTarget.toLowerCase());
-  const itemDepot = depots.find(d => d.id.toLowerCase() === cleanItem.toLowerCase() || d.name.toLowerCase() === cleanItem.toLowerCase());
+  const targetDepot = depots.find(d => 
+    d.id.toLowerCase() === cleanTarget.toLowerCase() || 
+    d.name.trim().toLowerCase() === cleanTarget.toLowerCase() ||
+    normalize(d.name) === normalize(cleanTarget)
+  );
+
+  const itemDepot = depots.find(d => 
+    d.id.toLowerCase() === cleanItem.toLowerCase() || 
+    d.name.trim().toLowerCase() === cleanItem.toLowerCase() ||
+    normalize(d.name) === normalize(cleanItem)
+  );
 
   // 2. Both point to the exact same depot in depots array
   if (targetDepot && itemDepot && targetDepot.id === itemDepot.id) return true;
 
-  // 3. Name or substring match
-  if (targetDepot) {
-    const tName = targetDepot.name.toLowerCase();
-    const tCity = (targetDepot.city || "").toLowerCase();
-    const iName = cleanItem.toLowerCase();
-
-    if (tName === iName || (tCity && tCity === iName)) return true;
-    if (tName.includes(iName) || iName.includes(tName)) return true;
-    if (tCity && (tCity.includes(iName) || iName.includes(tCity))) return true;
+  // 3. Fallback for legacy dep-1, dep-2, dep-01, dep-02
+  const lowerItem = cleanItem.toLowerCase();
+  const lowerTarget = cleanTarget.toLowerCase();
+  if (lowerItem === "dep-1" || lowerItem === "dep-01") {
+    if (targetDepot && depots.length > 0 && depots[0].id === targetDepot.id) return true;
+    if (depots.length > 0 && depots[0].id.toLowerCase() === lowerTarget) return true;
+  }
+  if (lowerItem === "dep-2" || lowerItem === "dep-02") {
+    if (targetDepot && depots.length > 1 && depots[1].id === targetDepot.id) return true;
+    if (depots.length > 1 && depots[1].id.toLowerCase() === lowerTarget) return true;
+  }
+  if (lowerTarget === "dep-1" || lowerTarget === "dep-01") {
+    if (itemDepot && depots.length > 0 && depots[0].id === itemDepot.id) return true;
+    if (depots.length > 0 && depots[0].id.toLowerCase() === lowerItem) return true;
+  }
+  if (lowerTarget === "dep-2" || lowerTarget === "dep-02") {
+    if (itemDepot && depots.length > 1 && depots[1].id === itemDepot.id) return true;
+    if (depots.length > 1 && depots[1].id.toLowerCase() === lowerItem) return true;
   }
 
-  // 4. Default fallback: if item is 'dep-1' or 'dep-01' and targetDepot is the first depot
-  if ((cleanItem === 'dep-1' || cleanItem === 'dep-01') && depots.length > 0 && targetDepot && depots[0].id === targetDepot.id) {
-    return true;
+  // 4. Handle trajectory strings (e.g. "Usine-->Depot Gare Bou Ndaw")
+  if (cleanItem.includes("-->") || cleanItem.includes("->")) {
+    const parts = cleanItem.split(/-+>/);
+    for (const part of parts) {
+      if (isMatchingDepot(part.trim(), targetDepotId, depots)) return true;
+    }
+  }
+
+  // 5. Normalized name or keyword match
+  if (targetDepot) {
+    const normTarget = normalize(targetDepot.name);
+    const normItem = normalize(cleanItem);
+
+    if (normTarget === normItem) return true;
+    if (normTarget && normItem && (normTarget.includes(normItem) || normItem.includes(normTarget))) return true;
+
+    // Specific domain keywords
+    if (normTarget.includes("gare bou ndaw") && (normItem.includes("gare bou ndaw") || normItem.includes("bou ndaw"))) return true;
+    if (normTarget.includes("usine") && normItem.includes("usine")) return true;
   }
 
   return false;
